@@ -260,7 +260,7 @@ export default function AdminDashboard() {
                                 title: titleInput.value.toUpperCase(),
                                 category: categoryInput.value.toUpperCase(),
                                 image_url: imageUrl,
-                                date: new Date().toISOString().split('T')[0]
+                                date: `${form.querySelector<HTMLInputElement>('input[name="year"]')?.value || '2024'}-01-01`
                             }]);
                             if (error) throw error;
                             form.reset();
@@ -273,6 +273,7 @@ export default function AdminDashboard() {
                      }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <input name="title" required placeholder="PROJECT_TITLE" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
                         <input name="category" required placeholder="GENRE/ROLE (e.g. PROD)" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                        <input name="year" required type="number" defaultValue={new Date().getFullYear()} className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
                         <div className="relative">
                             <input type="file" required accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                             <div className="h-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-[10px] flex items-center gap-2 text-zinc-500">
@@ -281,7 +282,7 @@ export default function AdminDashboard() {
                             </div>
                         </div>
                         <button disabled={uploading} className="bg-zinc-50 text-zinc-950 font-black uppercase text-xs tracking-widest hover:invert transition-all disabled:opacity-50">
-                            {uploading ? "UPLOADING..." : "INITIALIZE_PROJECT"}
+                            {uploading ? "WAIT..." : "INITIALIZE"}
                         </button>
                      </form>
                   </div>

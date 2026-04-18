@@ -61,45 +61,37 @@ export default function ProjectsPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-6">
+          <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-2 md:gap-8">
             {loading ? (
-                <div className="col-span-12 py-32 flex items-center justify-center border-2 border-zinc-900 border-dashed">
+                <div className="col-span-3 py-32 flex items-center justify-center border-2 border-zinc-900 border-dashed">
                     <p className="font-mono text-xs uppercase tracking-[0.5em] animate-pulse">Synchronizing_Archive_Assets...</p>
                 </div>
             ) : projects.length > 0 ? (
-                projects.map((project, index) => {
-                    const isFeature = index === 0;
+                projects.map((project) => {
                     return (
                         <div 
                             key={project.id} 
-                            className={`${isFeature ? 'md:col-span-8' : 'md:col-span-4'} group flex flex-col gap-1 md:gap-0`}
+                            className="group flex flex-col gap-1"
                         >
-                            <div className={`relative aspect-square ${isFeature ? 'md:aspect-video' : ''} bg-zinc-950 overflow-hidden border border-zinc-800 group-hover:border-primary transition-colors`}>
+                            <div className="relative aspect-square bg-zinc-950 overflow-hidden border border-zinc-800 group-hover:border-primary transition-colors">
                                 <img 
-                                    className="absolute inset-0 w-full h-full object-cover grayscale contrast-125 brightness-75 group-hover:scale-105 transition-transform duration-700" 
+                                    className="absolute inset-0 w-full h-full object-cover grayscale contrast-125 brightness-75 group-hover:opacity-100 opacity-60 transition-all duration-700" 
                                     src={project.image_url}
                                     alt={project.title}
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60"></div>
-                                <div className="absolute top-4 right-4">
-                                    <PlayCircle className="w-6 h-6 md:w-10 md:h-10 text-zinc-50 opacity-0 group-hover:opacity-100 transition-all duration-300" strokeWidth={1.5} />
-                                </div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                             </div>
-                            <div className="p-4 md:p-8 bg-zinc-900/50 md:bg-zinc-950 border-t border-zinc-800">
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2">
-                                    <div>
-                                        <h4 className="font-headline text-lg md:text-4xl lg:text-5xl font-black uppercase text-zinc-50 leading-none truncate mb-1 tracking-tighter">
-                                            {project.title}
-                                        </h4>
-                                        <p className="font-mono text-[10px] md:text-sm text-zinc-400 font-bold uppercase tracking-widest">
-                                            LUX_{project.category?.toUpperCase() || 'PRODUCED'}
-                                        </p>
-                                    </div>
-                                    <div className="text-left md:text-right">
-                                        <span className="font-mono text-[10px] md:text-sm text-zinc-600 uppercase block font-bold">
-                                            ACT_{project.date ? new Date(project.date).getFullYear() : '2024'}
-                                        </span>
-                                    </div>
+                            <div className="p-2 md:p-6 bg-zinc-900/30 border-t border-zinc-800 flex-1">
+                                <h4 className="font-headline text-[10px] md:text-3xl font-black uppercase text-zinc-50 leading-none truncate mb-1 tracking-tighter group-hover:text-primary transition-colors">
+                                    {project.title}
+                                </h4>
+                                <div className="flex justify-between items-center opacity-60">
+                                    <p className="font-mono text-[6px] md:text-xs text-zinc-400 font-bold uppercase tracking-tighter">
+                                        {project.category || 'PRODUCED'}
+                                    </p>
+                                    <span className="font-mono text-[6px] md:text-xs text-zinc-600 uppercase font-bold">
+                                        {project.date ? new Date(project.date).getFullYear() : '2024'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
