@@ -75,7 +75,7 @@ export default function ProjectsPage() {
                         >
                             <div className="relative aspect-square bg-zinc-950 overflow-hidden border border-zinc-800 group-hover:border-primary transition-colors">
                                 <img 
-                                    className="absolute inset-0 w-full h-full object-cover grayscale contrast-125 brightness-75 group-hover:opacity-100 opacity-60 transition-all duration-700" 
+                                    className="absolute inset-0 w-full h-full object-cover group-hover:opacity-100 opacity-80 transition-all duration-700" 
                                     src={project.image_url}
                                     alt={project.title}
                                 />

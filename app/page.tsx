@@ -179,7 +179,7 @@ export default function Home() {
                 <Link key={project.id} href="/projects" className="group flex flex-col gap-1 md:gap-4 relative">
                     <div className="relative aspect-square bg-zinc-950 overflow-hidden border border-zinc-800 group-hover:border-primary transition-all duration-300">
                         <img 
-                            className="absolute inset-0 w-full h-full object-cover grayscale brightness-75 group-hover:scale-105 group-hover:brightness-100 transition-all duration-700" 
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-700" 
                             src={project.image_url}
                             alt={project.title}
                         />
