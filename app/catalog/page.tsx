@@ -1,23 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
-import Link from "next/link";
+import { Footer } from "@/components/Footer";
+import { Hero } from "@/components/Hero";
+import { Play, Pause, ShoppingBag, Filter, ShieldCheck, Zap } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { Play } from "lucide-react";
+import Link from "next/link";
 
 interface Beat {
   id: string;
   title: string;
   genre: string;
   bpm: number;
-  tags: string[];
-}
-
-interface Category {
-  id: string;
-  name: string;
+  audio_url: string;
+  price_basic: number;
 }
 
 export default function CatalogPage() {
@@ -25,178 +23,172 @@ export default function CatalogPage() {
   const [beats, setBeats] = useState<Beat[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Audio State
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        
-        // Fetch Categories
-        const { data: catData, error: catError } = await supabase
-          .from('categories')
-          .select('name')
-          .order('name');
-        
-        if (catData) setCategories(catData.map(c => c.name));
-        if (catError) console.error("Error fetching categories:", catError);
+        const [catRes, beatRes] = await Promise.all([
+          supabase.from('categories').select('name').order('name'),
+          supabase.from('beats').select('*').order('created_at', { ascending: false })
+        ]);
 
-        // Fetch Beats
-        const { data: beatData, error: beatError } = await supabase
-          .from('beats')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (beatData) {
-          setBeats(beatData as Beat[]);
-        }
-        if (beatError) console.error("Error fetching beats:", beatError);
-        
+        if (catRes.data) setCategories(catRes.data.map(c => c.name));
+        if (beatRes.data) setBeats(beatRes.data as Beat[]);
       } catch (err) {
-        console.error("Critical fetch error:", err);
+        console.error("Data fetch protocol failure:", err);
       } finally {
         setLoading(false);
       }
     }
-
     fetchData();
+
+    return () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+    };
   }, []);
 
+  const togglePlay = (beat: Beat) => {
+    if (playingId === beat.id) {
+        audioRef.current?.pause();
+        setPlayingId(null);
+    } else {
+        if (audioRef.current) {
+            audioRef.current.pause();
+        }
+        audioRef.current = new Audio(beat.audio_url);
+        audioRef.current.play().catch(e => console.error("Playback failed:", e));
+        audioRef.current.onended = () => setPlayingId(null);
+        setPlayingId(beat.id);
+    }
+  };
+
   const filteredBeats = selectedCategory 
-    ? beats.filter(b => b.tags?.includes(selectedCategory))
+    ? beats.filter(beat => beat.genre === selectedCategory)
     : beats;
 
   return (
     <>
       <Header />
-      <main className="min-h-screen pt-20 pb-32 debug-grid overflow-x-hidden">
-        {/* --- Header Section --- */}
-        <header className="px-4 md:px-12 mb-8 border-l-4 md:border-l-2 border-primary ml-4 md:ml-12 pl-4">
-          <p className="font-body text-sm md:text-base text-zinc-400 leading-tight md:leading-normal max-w-2xl">
-            Premium beats for your next hit. Easy licensing. Professional sound for every artist.
-          </p>
-        </header>
+      <main className="min-h-screen pt-12 md:pt-20 pb-32 bg-zinc-950 text-zinc-50 font-['Space_Grotesk'] overflow-x-hidden">
+        <Hero title="BEAT_\nCATALOG" />
 
-        {/* Categories Grid */}
-        <div className="px-4 md:px-12 border-t border-zinc-900 pt-8 pb-4">
-          <p className="font-headline text-[10px] tracking-[0.4em] text-zinc-600 mb-5 uppercase">
-            {selectedCategory ? `CATEGORY: ${selectedCategory}` : "SELECT_A_CATEGORY_TO_VIEW_BEATS"}
-          </p>
-          <div className="flex flex-wrap gap-3 md:gap-4">
+        {/* --- Advanced Filter Bar --- */}
+        <div className="px-4 md:px-12 py-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-zinc-900 sticky top-16 bg-zinc-950/90 backdrop-blur-md z-40">
+          <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
             <button 
               onClick={() => setSelectedCategory(null)}
-              className={`px-6 py-3 border text-xs font-mono tracking-widest transition-all font-bold ${
-                selectedCategory === null 
+              className={`flex-shrink-0 px-6 py-2 border font-mono text-[10px] uppercase tracking-widest transition-all ${
+                !selectedCategory 
                 ? "bg-zinc-50 text-zinc-950 border-zinc-50" 
-                : "border-zinc-800 text-zinc-500 hover:text-zinc-50 hover:border-zinc-50"
+                : "border-zinc-800 text-zinc-500 hover:text-zinc-50"
               }`}
             >
-              All
+              ALL_SIGNALS
             </button>
             {categories.map((cat) => (
               <button 
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-6 py-3 border text-xs font-mono tracking-widest transition-all font-bold ${
+                className={`flex-shrink-0 px-6 py-2 border font-mono text-[10px] uppercase tracking-widest transition-all ${
                   selectedCategory === cat 
                   ? "bg-zinc-50 text-zinc-950 border-zinc-50" 
-                  : "border-zinc-800 text-zinc-500 hover:text-zinc-50 hover:border-zinc-50"
+                  : "border-zinc-800 text-zinc-500 hover:text-zinc-50 shadow-lg"
                 }`}
               >
                 {cat}
               </button>
             ))}
           </div>
+          <div className="flex items-center gap-6 opacity-30 hidden lg:flex">
+             <div className="flex items-center gap-2"><ShieldCheck size={14} /> <span className="text-[10px] font-mono">SECURE_PAYMENT</span></div>
+             <div className="flex items-center gap-2"><Zap size={14} /> <span className="text-[10px] font-mono">INSTANT_DELIVERY</span></div>
+          </div>
         </div>
 
-        {/* --- Catalog List / Grid --- */}
-        <section className={`border-t-2 border-zinc-800 grid grid-cols-2 lg:grid-cols-1 gap-px bg-zinc-800 ${!selectedCategory ? 'hidden md:grid' : 'grid'}`}>
+        {/* --- Catalog Stream --- */}
+        <section className="border-t border-zinc-900 divide-y divide-zinc-900 min-h-[500px]">
           {loading ? (
-            <div className="col-span-full py-24 flex items-center justify-center bg-zinc-950">
-               <p className="font-mono text-xs uppercase tracking-[0.5em] animate-pulse">Initializing_Catalog_Data...</p>
-            </div>
+             <div className="py-32 flex flex-col items-center justify-center">
+                <div className="w-12 h-12 border-2 border-zinc-800 border-t-zinc-50 animate-spin mb-4"></div>
+                <p className="font-mono text-xs uppercase tracking-[0.4em] text-zinc-600">Syncing_Beat_Cloud...</p>
+             </div>
           ) : filteredBeats.length > 0 ? (
             filteredBeats.map((beat) => (
-              <div key={beat.id} className="group bg-zinc-950 hover:bg-zinc-900/50 transition-colors duration-150">
-                <div className="flex flex-col lg:flex-row items-stretch lg:min-h-[180px]">
-                  <div className="hidden lg:flex w-32 items-center justify-center border-r border-zinc-800 py-8">
-                    <span className="font-headline text-2xl font-black text-zinc-100 opacity-20 group-hover:opacity-100 transition-opacity uppercase truncate px-2">
-                        {beat.title.slice(0, 3)}
-                    </span>
-                  </div>
+              <div key={beat.id} className="group relative hover:bg-zinc-900/30 transition-all duration-300">
+                <div className="flex flex-col lg:flex-row items-stretch">
                   
-                  <Link 
-                    href={`/catalog/${beat.id}`}
-                    className="flex-grow flex flex-col items-center justify-between px-4 py-6 md:px-8 md:py-8 gap-4 text-center lg:text-left lg:flex-row hover:bg-zinc-900 transition-all cursor-pointer group/data"
-                  >
-                    <div className="w-full">
-                      <h3 className="font-headline text-sm md:text-3xl font-bold uppercase tracking-tight text-zinc-100 truncate group-hover/data:text-primary transition-colors">{beat.title}</h3>
-                      <p className="font-mono text-[8px] md:text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{beat.genre}</p>
-                      <div className="lg:hidden mt-2 font-headline text-xs font-bold text-zinc-400">{beat.bpm} BPM</div>
-                    </div>
-                    
-                    <div className="hidden lg:flex flex-col items-end w-32">
-                      <span className="font-headline text-2xl font-bold text-zinc-100">{beat.bpm}</span>
-                      <span className="font-mono text-[10px] text-zinc-500 uppercase">BPM</span>
-                    </div>
-                  </Link>
-  
-                  <div className="w-full lg:w-64 flex flex-row items-stretch border-t lg:border-t-0 lg:border-l border-zinc-800">
-                    <button className="flex-1 flex items-center justify-center p-3 md:p-6 border-r border-zinc-800 hover:bg-zinc-800 transition-colors">
-                      <Play className="w-6 h-6 md:w-8 md:h-8 text-zinc-50 fill-current" />
-                    </button>
-                    <Link 
-                      href={`/catalog/${beat.id}`}
-                      className="flex-[2] bg-zinc-50 text-zinc-950 font-black uppercase text-[10px] md:text-xs tracking-widest px-4 md:px-8 py-3 md:py-6 active:scale-95 transition-all text-center flex items-center justify-center"
-                    >
-                      BUY
-                    </Link>
+                  {/* Visual ID Component */}
+                  <div className="hidden lg:flex w-24 items-center justify-center border-r border-zinc-900 group-hover:bg-zinc-900 transition-colors">
+                     <span className="font-mono text-[10px] text-zinc-800 group-hover:text-zinc-500 rotate-90 whitespace-nowrap">ID_{beat.id.slice(0, 4)}</span>
+                  </div>
+
+                  <div className="flex-1 flex flex-col md:flex-row items-center justify-between p-6 md:p-10 gap-8">
+                     <div className="flex-1 min-w-0 w-full md:w-auto">
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="font-mono text-[8px] bg-zinc-800 text-zinc-400 px-2 py-0.5 uppercase">{beat.genre}</span>
+                            <span className="font-mono text-[8px] text-zinc-600">{beat.bpm} BPM</span>
+                        </div>
+                        <h3 className="font-headline text-2xl md:text-5xl font-black uppercase tracking-tighter text-zinc-100 group-hover:text-primary transition-colors truncate">
+                            {beat.title}
+                        </h3>
+                     </div>
+
+                     <div className="flex items-center gap-4 w-full md:w-auto">
+                        <div className="flex flex-col items-end pr-8 border-r border-zinc-900 hidden md:flex">
+                            <span className="font-headline text-3xl font-black">${beat.price_basic || '29.99'}</span>
+                            <span className="font-mono text-[9px] text-zinc-600 uppercase">BASIC_LICENSE</span>
+                        </div>
+                        
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <button 
+                                onClick={() => togglePlay(beat)}
+                                className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center transition-all ${
+                                    playingId === beat.id ? "bg-primary text-zinc-50" : "bg-zinc-900 text-zinc-50 hover:bg-zinc-50 hover:text-zinc-950"
+                                }`}
+                            >
+                                {playingId === beat.id ? (
+                                    <Pause size={32} className="fill-current" />
+                                ) : (
+                                    <Play size={32} className="fill-current ml-1" />
+                                )}
+                            </button>
+                            <Link 
+                                href={`/catalog/${beat.id}`}
+                                className="flex-1 md:flex-none h-14 md:h-20 bg-zinc-50 text-zinc-950 px-6 md:px-12 flex items-center justify-center font-headline font-black text-xs md:text-xl uppercase tracking-widest hover:invert transition-all active:scale-95"
+                            >
+                                <ShoppingBag size={20} className="md:hidden" />
+                                <span className="hidden md:block">ACQUIRE</span>
+                            </Link>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Waveform Visualization (Dynamic Simulation) */}
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-zinc-900 overflow-hidden">
+                     {playingId === beat.id && (
+                        <div className="h-full bg-primary animate-[uploadProgress_45s_linear_forwards] shadow-[0_0_10px_#f43f5e]"></div>
+                     )}
                   </div>
                 </div>
               </div>
             ))
           ) : (
-            <div className="col-span-full py-24 flex items-center justify-center bg-zinc-950">
-               <p className="font-mono text-xs uppercase tracking-[0.3em] text-zinc-600">No_Beats_Found_In_This_Sector</p>
+            <div className="py-32 flex flex-col items-center justify-center italic opacity-20">
+                <Filter size={48} className="mb-4" />
+                <p className="font-mono text-sm uppercase tracking-widest">No_Signals_Match_The_Filter</p>
             </div>
           )}
         </section>
 
-        {/* --- Licensing & Packs --- */}
-        <section className="mt-16 md:mt-24 px-4 md:px-6 grid grid-cols-1 md:grid-cols-2 gap-px bg-zinc-800 border-y-2 border-zinc-800 text-zinc-100">
-          {/* Licensing - Hidden on Mobile */}
-          <div className="hidden md:flex bg-zinc-950 p-8 md:p-12 flex-col gap-8">
-            <h4 className="font-headline text-3xl md:text-4xl font-black uppercase italic tracking-tighter">LICENSING</h4>
-            <div className="space-y-4">
-              <div className="flex justify-between items-end border-b border-zinc-900 pb-2">
-                <span className="font-mono text-[10px] md:text-xs text-zinc-500 uppercase">Basic Lease</span>
-                <span className="font-headline font-bold text-zinc-100">$29.99</span>
-              </div>
-              <div className="flex justify-between items-end border-b border-zinc-900 pb-2">
-                <span className="font-mono text-[10px] md:text-xs text-zinc-500 uppercase">Premium Lease</span>
-                <span className="font-headline font-bold text-zinc-100">$79.99</span>
-              </div>
-              <div className="flex justify-between items-end border-b border-zinc-900 pb-2">
-                <span className="font-mono text-[10px] md:text-xs text-zinc-500 uppercase">Exclusive</span>
-                <span className="font-headline font-bold text-zinc-100">$499.00+</span>
-              </div>
-            </div>
-            <button className="w-full border-2 border-zinc-50 py-4 font-bold uppercase tracking-widest hover:bg-zinc-50 hover:text-zinc-950 transition-all">Read Full Contract</button>
-          </div>
-
-          <div className="bg-zinc-900 p-8 md:p-12 relative overflow-hidden flex flex-col justify-between group">
-            <div className="z-10">
-              <span className="bg-zinc-50 text-zinc-950 px-2 py-1 text-[10px] font-black uppercase mb-4 inline-block tracking-tighter">DRUM_KIT_01</span>
-              <h4 className="font-headline text-2xl md:text-5xl font-black uppercase leading-none mb-4 md:mb-6">PREMIUM_SAMPLES</h4>
-              <p className="text-xs md:text-sm text-zinc-400 max-w-xs">High-quality drum hits and melody loops for professional production.</p>
-            </div>
-            <div className="mt-8 md:mt-12 z-10">
-              <button className="bg-zinc-50 text-zinc-950 font-black uppercase px-10 md:px-12 py-3 md:py-4 tracking-tighter text-base md:text-lg hover:scale-105 transition-transform">Get Here</button>
-            </div>
-            <div className="absolute -right-16 -bottom-16 md:-right-20 md:-bottom-20 opacity-10 group-hover:opacity-20 transition-opacity">
-               <div className="w-[200px] md:w-[300px] h-[200px] md:h-[300px] border-8 border-zinc-50 rounded-full animate-[spin_10s_linear_infinite]"></div>
-            </div>
-          </div>
-        </section>
+        <Footer />
       </main>
       <BottomNav />
     </>

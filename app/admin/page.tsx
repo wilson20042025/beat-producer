@@ -264,7 +264,12 @@ export default function AdminDashboard() {
                             </div>
                             <div className="space-y-2">
                                 <label className="font-mono text-[9px] text-zinc-500 uppercase">Style_Genre</label>
-                                <input name="genre" required placeholder="PHONK / DRILL" className="w-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                                <select name="genre" required className="w-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none appearance-none">
+                                    {categories.map(cat => (
+                                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                    ))}
+                                    {categories.length === 0 && <option value="DEFAULT">NO_CATEGORIES_DEFINED</option>}
+                                </select>
                             </div>
                             <div className="space-y-2">
                                 <label className="font-mono text-[9px] text-zinc-500 uppercase">Meta_Tags (Comma Separated)</label>
