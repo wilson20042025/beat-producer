@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Header } from "@/components/Header";
@@ -8,7 +8,6 @@ import { BottomNav } from "@/components/BottomNav";
 import { 
   Plus, 
   Trash2, 
-  Edit3, 
   ExternalLink, 
   UploadCloud, 
   Activity, 
@@ -16,11 +15,13 @@ import {
   Grid, 
   Image as ImageIcon, 
   Music,
-  LogOut
+  LogOut,
+  RefreshCw,
+  AlertTriangle
 } from "lucide-react";
 
 export default function AdminDashboard() {
-  const router = useRouter();
+  const router = useRouter(); // Explicitly defined within component
   const [activeTab, setActiveTab] = useState("inventory");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -34,27 +35,8 @@ export default function AdminDashboard() {
 
   // Form State
   const [newCategory, setNewCategory] = useState("");
-  const [showUploadModal, setShowUploadModal] = useState(false);
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push("/admin/login");
-      } else {
-        setUser(session.user);
-        fetchData();
-      }
-    };
-    checkUser();
-  }, [router]);
-
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push("/admin/login");
-  }
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [beatsRes, categoriesRes, projectsRes, inquiriesRes] = await Promise.all([
@@ -68,13 +50,38 @@ export default function AdminDashboard() {
       if (categoriesRes.data) setCategories(categoriesRes.data);
       if (projectsRes.data) setProjects(projectsRes.data);
       if (inquiriesRes.data) setInquiries(inquiriesRes.data);
+    } catch (err) {
+        console.error("Data fetch protocol failure:", err);
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    async function checkAuth() {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                router.push("/admin/login");
+            } else {
+                setUser(session.user);
+                fetchData();
+            }
+        } catch (err) {
+            console.error("Auth check protocol error:", err);
+            router.push("/admin/login");
+        }
+    }
+    checkAuth();
+  }, [router, fetchData]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/admin/login");
+  };
 
   const handleDelete = async (table: string, id: string) => {
-    if (!confirm(`Are you sure you want to delete this ${table} entry?`)) return;
+    if (!confirm(`CONFIRM_DELETION: Permanent removal of ${table} entry?`)) return;
     const { error } = await supabase.from(table).delete().eq('id', id);
     if (!error) fetchData();
     else alert(`Error deleting ${table}: ${error.message}`);
@@ -117,11 +124,11 @@ export default function AdminDashboard() {
   return (
     <>
       <Header />
-      <main className="min-h-screen pt-20 pb-32 px-4 md:px-12 lg:px-24 bg-zinc-950 text-zinc-50 font-['Space_Grotesk']">
+      <main className="min-h-screen pt-24 pb-32 px-4 md:px-12 lg:px-24 bg-zinc-950 text-zinc-50 font-['Space_Grotesk']">
         {/* Admin Header */}
-        <header className="mb-12 border-b-4 border-zinc-50 pb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <header className="mb-12 border-b-4 border-zinc-50 pb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative">
           <div>
-            <p className="font-mono text-[10px] tracking-[0.4em] text-zinc-500 uppercase mb-2">ACCESS_LEVEL: SUPER_USER</p>
+            <p className="font-mono text-[10px] tracking-[0.4em] text-zinc-500 uppercase mb-2">ACCESS_LEVEL: SUPER_USER // {user?.email}</p>
             <h1 className="font-headline text-5xl md:text-7xl font-black uppercase tracking-tighter italic">ADMIN_TERMINAL</h1>
           </div>
           <div className="flex gap-4">
@@ -143,13 +150,13 @@ export default function AdminDashboard() {
         </header>
 
         {/* Analytics Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-zinc-800 border-2 border-zinc-800 mb-16">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-zinc-800 border-2 border-zinc-800 mb-16 shadow-2xl">
           {stats.map((stat) => (
-            <div key={stat.label} className="bg-zinc-950 p-6 flex flex-col gap-2 relative overflow-hidden">
+            <div key={stat.label} className="bg-zinc-950 p-6 flex flex-col gap-2 relative overflow-hidden group">
               <span className="font-mono text-[9px] text-zinc-500 uppercase tracking-widest z-10">{stat.label}</span>
               <span className="font-headline text-3xl font-black z-10">{stat.value}</span>
               <span className={`font-mono text-[8px] uppercase tracking-tighter z-10 ${stat.trend === 'URGENT' ? 'text-primary' : 'text-green-500'}`}>{stat.trend}</span>
-              <div className="absolute -right-4 -bottom-4 opacity-[0.03] rotate-12">
+              <div className="absolute -right-4 -bottom-4 opacity-[0.03] rotate-12 group-hover:opacity-10 transition-opacity">
                   <Activity size={80} />
               </div>
             </div>
@@ -180,8 +187,9 @@ export default function AdminDashboard() {
         {/* Tab Content */}
         <section className="min-h-[400px]">
           {loading ? (
-             <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-zinc-900">
-                <p className="font-mono text-xs uppercase tracking-[0.5em] animate-pulse">Synchronizing_With_Supabase...</p>
+             <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-zinc-900 bg-zinc-900/10 transition-all">
+                <RefreshCw className="animate-spin text-zinc-700 mb-4" size={24} />
+                <p className="font-mono text-xs uppercase tracking-[0.5em] text-zinc-700">Synchronizing_With_Supabase...</p>
              </div>
           ) : (
             <>
@@ -190,7 +198,7 @@ export default function AdminDashboard() {
                   <div className="flex justify-between items-center">
                     <h2 className="font-headline text-3xl font-black uppercase italic">BEAT_ARCHIVE</h2>
                     <button 
-                        onClick={() => alert("Upload logic refined. Please use the Add Project structure as a baseline or I can implement a full Beat form here.")}
+                        onClick={() => alert("Upload Logic Terminal: Please use the Add Project structure as a baseline for audio uploads or contact system admin.")}
                         className="bg-zinc-50 text-zinc-950 px-8 py-3 font-headline font-black text-xs uppercase tracking-widest hover:invert transition-all flex items-center gap-3"
                     >
                         <Plus size={16} />
@@ -204,7 +212,6 @@ export default function AdminDashboard() {
                         <tr className="bg-zinc-900 border-b border-zinc-800">
                           <th className="p-4 uppercase tracking-widest text-zinc-500">BEAT_TITLE</th>
                           <th className="p-4 uppercase tracking-widest text-zinc-500">GENRE</th>
-                          <th className="p-4 uppercase tracking-widest text-zinc-500">BPM</th>
                           <th className="p-4 uppercase tracking-widest text-zinc-500 text-right">OPERATIONS</th>
                         </tr>
                       </thead>
@@ -215,7 +222,6 @@ export default function AdminDashboard() {
                             <td className="p-4">
                                 <span className="bg-zinc-900 px-2 py-1 border border-zinc-800 text-[9px] uppercase">{beat.genre}</span>
                             </td>
-                            <td className="p-4 text-[10px] font-bold">{beat.bpm}</td>
                             <td className="p-4 text-right">
                               <button onClick={() => handleDelete('beats', beat.id)} className="text-zinc-500 hover:text-red-500 transition-colors">
                                   <Trash2 size={16} />
@@ -235,7 +241,7 @@ export default function AdminDashboard() {
                     <h2 className="font-headline text-3xl font-black uppercase italic">PORTFOLIO_ARCHIVE</h2>
                   </div>
                   
-                  {/* Simple Add Project Form */}
+                  {/* Add Project Form */}
                   <div className="bg-zinc-900/50 border border-zinc-800 p-8">
                      <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-6">ADD_NEW_PROJECT_FILE</p>
                      <form onSubmit={async (e) => {
@@ -245,14 +251,14 @@ export default function AdminDashboard() {
                          const titleInput = form.querySelector('input[name="title"]') as HTMLInputElement;
                          const categoryInput = form.querySelector('input[name="category"]') as HTMLInputElement;
                          
-                         if (!fileInput.files?.[0]) return alert("Please select an image");
+                         if (!fileInput.files?.[0]) return alert("IMAGE_REQUIRED: Select a visual asset.");
                          
                          setUploading(true);
                          try {
                             const imageUrl = await uploadFile(fileInput.files[0], 'projects');
                             const { error } = await supabase.from('projects').insert([{
-                                title: titleInput.value,
-                                category: categoryInput.value,
+                                title: titleInput.value.toUpperCase(),
+                                category: categoryInput.value.toUpperCase(),
                                 image_url: imageUrl,
                                 date: new Date().toISOString().split('T')[0]
                             }]);
@@ -260,15 +266,15 @@ export default function AdminDashboard() {
                             form.reset();
                             fetchData();
                          } catch (err: any) {
-                             alert(`Upload failed: ${err.message}`);
+                             alert(`PROTOCOL_FAILURE: ${err.message}`);
                          } finally {
                              setUploading(false);
                          }
                      }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <input name="title" required placeholder="PROJECT_TITLE" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
-                        <input name="category" required placeholder="CATEGORY (MIXING/PROD)" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                        <input name="category" required placeholder="GENRE/ROLE (e.g. PROD)" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
                         <div className="relative">
-                            <input type="file" required accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                            <input type="file" required accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                             <div className="h-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-[10px] flex items-center gap-2 text-zinc-500">
                                 <UploadCloud size={14} />
                                 SELECT_COVER_ART
@@ -280,16 +286,16 @@ export default function AdminDashboard() {
                      </form>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {projects.map((project) => (
-                        <div key={project.id} className="bg-zinc-900 group relative">
-                            <img src={project.image_url} alt={project.title} className="w-full aspect-video object-cover grayscale opacity-50 group-hover:opacity-100 transition-all" />
-                            <div className="p-4 flex justify-between items-center">
-                                <div>
-                                    <h4 className="font-bold uppercase text-xs">{project.title}</h4>
-                                    <span className="text-[9px] text-zinc-500 uppercase">{project.category}</span>
+                        <div key={project.id} className="bg-zinc-900 group relative border border-zinc-800 overflow-hidden">
+                            <img src={project.image_url} alt={project.title} className="w-full aspect-video object-cover grayscale opacity-50 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
+                            <div className="p-4 flex justify-between items-center bg-zinc-900 relative z-10">
+                                <div className="truncate">
+                                    <h4 className="font-bold uppercase text-[10px] truncate">{project.title}</h4>
+                                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">{project.category}</span>
                                 </div>
-                                <button onClick={() => handleDelete('projects', project.id)} className="text-zinc-600 hover:text-red-500 transition-colors">
+                                <button onClick={() => handleDelete('projects', project.id)} className="text-zinc-600 hover:text-red-500 transition-colors shrink-0">
                                     <Trash2 size={14} />
                                 </button>
                             </div>
@@ -312,8 +318,8 @@ export default function AdminDashboard() {
                                 type="text" 
                                 value={newCategory}
                                 onChange={(e) => setNewCategory(e.target.value)}
-                                placeholder="CATEGORY_NAME (e.g. Jersey Club)" 
-                                className="flex-1 bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs focus:border-zinc-50 outline-none transition-colors" 
+                                placeholder="CATEGORY_NAME (e.g. PHONK)" 
+                                className="flex-1 bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs focus:border-zinc-50 outline-none transition-colors uppercase" 
                             />
                             <button onClick={handleAddCategory} className="bg-zinc-50 text-zinc-950 px-8 py-4 font-headline font-black text-xs uppercase tracking-widest hover:invert transition-all">INITIALIZE_CATEGORY</button>
                         </div>
@@ -330,7 +336,7 @@ export default function AdminDashboard() {
                             <tbody>
                                 {categories.map((cat) => (
                                     <tr key={cat.id} className="border-b border-zinc-900 group">
-                                        <td className="p-4 font-bold md:text-lg">{cat.name}</td>
+                                        <td className="p-4 font-bold md:text-lg uppercase">{cat.name}</td>
                                         <td className="p-4 text-right opacity-50 group-hover:opacity-100 transition-opacity">
                                             <button onClick={() => handleDelete('categories', cat.id)} className="text-zinc-500 hover:text-red-500 transition-colors">
                                                 <Trash2 size={16} />
@@ -350,18 +356,18 @@ export default function AdminDashboard() {
                    {inquiries.length > 0 ? (
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                            {inquiries.map((iq) => (
-                               <div key={iq.id} className="bg-zinc-900 border border-zinc-800 p-6 flex flex-col gap-4">
+                               <div key={iq.id} className="bg-zinc-900 border border-zinc-800 p-6 flex flex-col gap-4 group hover:border-zinc-50 transition-all">
                                    <div className="flex justify-between items-start">
                                        <div>
-                                           <h4 className="font-bold uppercase text-lg">{iq.client_name}</h4>
-                                           <p className="font-mono text-[10px] text-zinc-500">{iq.client_email}</p>
+                                           <h4 className="font-bold uppercase text-lg group-hover:text-primary transition-colors">{iq.client_name}</h4>
+                                           <p className="font-mono text-[10px] text-zinc-600">{iq.client_email}</p>
                                        </div>
-                                       <span className="bg-primary/20 text-primary text-[9px] px-2 py-1 uppercase">{iq.status}</span>
+                                       <span className="bg-zinc-800 text-zinc-500 text-[8px] px-2 py-1 uppercase font-bold">{iq.status || "NEW"}</span>
                                    </div>
-                                   <p className="text-xs text-zinc-300 italic leading-relaxed">"{iq.message}"</p>
-                                   <div className="pt-4 border-t border-zinc-800 flex justify-between items-center">
-                                       <span className="font-mono text-[10px] text-zinc-600">{new Date(iq.created_at).toLocaleDateString()}</span>
-                                       <button onClick={() => handleDelete('inquiries', iq.id)} className="text-zinc-600 hover:text-red-500 transition-colors">
+                                   <p className="text-xs text-zinc-400 italic leading-relaxed border-l-2 border-zinc-800 pl-4">"{iq.message}"</p>
+                                   <div className="pt-4 border-t border-zinc-900 flex justify-between items-center text-zinc-700">
+                                       <span className="font-mono text-[9px] uppercase tracking-widest">{new Date(iq.created_at).toLocaleDateString()} // GMT</span>
+                                       <button onClick={() => handleDelete('inquiries', iq.id)} className="hover:text-red-500 transition-colors">
                                            <Trash2 size={14} />
                                        </button>
                                    </div>
@@ -370,7 +376,7 @@ export default function AdminDashboard() {
                        </div>
                    ) : (
                     <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-zinc-900">
-                        <Inbox size={48} className="text-zinc-800 mb-4" />
+                        <AlertTriangle size={32} className="text-zinc-800 mb-4" />
                         <p className="font-mono text-xs text-zinc-600 uppercase tracking-widest">No_Active_Transmission_Protocols</p>
                     </div>
                    )}
