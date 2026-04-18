@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, Library, Mail } from "lucide-react";
+import { Home, Disc3, Trophy, Mail } from "lucide-react";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -29,7 +29,7 @@ export function BottomNav() {
           : "text-zinc-50 hover:bg-zinc-800"
         }`}
       >
-        <LayoutGrid className="w-6 h-6" strokeWidth={2.5} />
+        <Disc3 className={`w-6 h-6 ${pathname === "/catalog" ? "animate-spin" : ""}`} style={{ animationDuration: '3s' }} strokeWidth={2.5} />
       </Link>
       
       <Link 
@@ -40,7 +40,7 @@ export function BottomNav() {
           : "text-zinc-50 hover:bg-zinc-800"
         }`}
       >
-        <Library className="w-6 h-6" strokeWidth={2.5} />
+        <Trophy className="w-6 h-6" strokeWidth={2.5} />
       </Link>
       
       <Link 

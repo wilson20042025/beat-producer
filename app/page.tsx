@@ -31,7 +31,7 @@ export default function Home() {
               </h2>
             </div>
             <div className="w-full md:w-[40%] flex flex-col gap-6">
-              <p className="text-sm text-on-surface-variant max-w-full md:max-w-xs leading-relaxed border-l-2 border-primary pl-4 uppercase">
+              <p className="text-sm text-on-surface-variant max-w-full md:max-w-xs leading-relaxed border-l-2 border-primary pl-4">
                 High-quality instrumentals for your next hit. Industry standard sound design and professional licensing for independent artists.
               </p>
               <div className="group flex items-center justify-between bg-primary text-on-primary p-4 md:p-6 cursor-pointer hover:bg-surface-container-highest hover:text-primary transition-colors duration-100">
