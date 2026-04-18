@@ -16,7 +16,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "LUXBEATZ - Healing Your Pain Through Music",
-  description: "A Liberian based beat & song producer. Transforming the sound of artist in and across the world",
+  description: "A Liberian based beat & song producer. Transforming the sounds of artists in Liberia and across the world.",
 };
 
 export default function RootLayout({

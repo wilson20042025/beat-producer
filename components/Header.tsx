@@ -3,14 +3,15 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Activity } from "lucide-react";
 
 export function Header() {
   const pathname = usePathname();
 
   const getTitle = () => {
     switch (pathname) {
-      case "/catalog": return "LUXBEATZ STORE";
-      case "/projects": return "LUXBEATZ PROJECTS";
+      case "/catalog": return "LUXBEATZ_STORE";
+      case "/projects": return "LUXBEATZ_PROJECTS";
       case "/contact": return "ENQUIRY";
       default: return "@LUXBEATZ";
     }
@@ -69,7 +70,7 @@ export function Header() {
               CONTACT
             </Link>
           </nav>
-          <span className="material-symbols-outlined text-zinc-50">graphic_eq</span>
+          <Activity className="w-5 h-5 text-zinc-50" strokeWidth={3} />
         </div>
       </header>
     </>

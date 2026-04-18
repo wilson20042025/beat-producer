@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
+import { Play, Pause, ChevronRight } from "lucide-react";
 
 /**
  * LoadingScreen Component

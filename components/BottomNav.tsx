@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Home, LayoutGrid, Library, Mail } from "lucide-react";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -17,7 +18,7 @@ export function BottomNav() {
           : "text-zinc-50 hover:bg-zinc-800"
         }`}
       >
-        <span className="material-symbols-outlined">home</span>
+        <Home className="w-6 h-6" strokeWidth={2.5} />
       </Link>
       
       <Link 
@@ -28,7 +29,7 @@ export function BottomNav() {
           : "text-zinc-50 hover:bg-zinc-800"
         }`}
       >
-        <span className="material-symbols-outlined">grid_view</span>
+        <LayoutGrid className="w-6 h-6" strokeWidth={2.5} />
       </Link>
       
       <Link 
@@ -39,7 +40,7 @@ export function BottomNav() {
           : "text-zinc-50 hover:bg-zinc-800"
         }`}
       >
-        <span className="material-symbols-outlined" style={{ fontVariationSettings: pathname === "/projects" ? "'FILL' 1" : "'FILL' 0" }}>layers</span>
+        <Library className="w-6 h-6" strokeWidth={2.5} />
       </Link>
       
       <Link 
@@ -50,7 +51,7 @@ export function BottomNav() {
           : "text-zinc-50 hover:bg-zinc-800"
         }`}
       >
-        <span className="material-symbols-outlined">mail</span>
+        <Mail className="w-6 h-6" strokeWidth={2.5} />
       </Link>
     </nav>
   );

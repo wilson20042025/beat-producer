@@ -2,6 +2,7 @@ import React from "react";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import { Footer } from "@/components/Footer";
+import { ArrowRight, Play, Heart, ArrowUpRight } from "lucide-react";
 
 export default function Home() {
   const demos = [
@@ -30,14 +31,14 @@ export default function Home() {
               </h2>
             </div>
             <div className="w-full md:w-[40%] flex flex-col gap-6">
-              <p className="text-sm text-on-surface-variant max-w-full md:max-w-xs leading-relaxed border-l-2 border-primary pl-4">
+              <p className="text-sm text-on-surface-variant max-w-full md:max-w-xs leading-relaxed border-l-2 border-primary pl-4 uppercase">
                 High-quality instrumentals for your next hit. Industry standard sound design and professional licensing for independent artists.
               </p>
               <div className="group flex items-center justify-between bg-primary text-on-primary p-4 md:p-6 cursor-pointer hover:bg-surface-container-highest hover:text-primary transition-colors duration-100">
                 <span className="font-headline font-bold uppercase tracking-widest text-sm md:text-base">
                  Visit_LuxBeatz_Store
                 </span>
-                <span className="material-symbols-outlined">arrow_forward</span>
+                <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
               </div>
             </div>
           </div>
@@ -70,7 +71,7 @@ export default function Home() {
                   </h4>
                   <div className="mt-2 md:mt-4 flex items-center gap-2 md:gap-4">
                      <button className="w-8 h-8 md:w-12 md:h-12 bg-zinc-50 text-zinc-950 rounded-full flex items-center justify-center hover:bg-primary hover:text-zinc-50 transition-colors">
-                        <span className="material-symbols-outlined text-lg md:text-2xl">play_arrow</span>
+                        <Play className="w-4 h-4 md:w-6 md:h-6 fill-current" />
                      </button>
                      <div className="flex-1 h-[1px] md:h-[2px] bg-zinc-800 relative overflow-hidden hidden md:block">
                         <div className="absolute inset-0 bg-primary/20 animate-pulse"></div>
@@ -80,9 +81,11 @@ export default function Home() {
 
                 <div className="flex justify-between items-center pt-2 md:pt-4 border-t border-zinc-800">
                   <span className="font-mono text-[6px] md:text-[10px] text-zinc-500">{demo.dur}</span>
-                  <button className="material-symbols-outlined text-sm md:hidden text-zinc-400 hover:text-primary transition-colors">favorite</button>
+                  <button className="md:hidden text-zinc-400 hover:text-primary transition-colors">
+                    <Heart className="w-3 h-3" strokeWidth={3} />
+                  </button>
                   <button className="hidden md:block group/like flex items-center gap-2 border border-zinc-800 px-3 py-1 hover:border-zinc-50 transition-all">
-                    <span className="material-symbols-outlined text-sm group-hover/like:text-primary transition-colors">favorite</span>
+                    <Heart className="w-3 h-3 group-hover/like:text-primary transition-colors" strokeWidth={3} />
                     <span className="text-[10px] font-bold uppercase tracking-widest">LIKE</span>
                   </button>
                 </div>
@@ -115,7 +118,7 @@ export default function Home() {
               <p className="text-[10px] md:text-sm text-on-surface-variant mb-4 md:mb-6 leading-relaxed line-clamp-2 md:line-clamp-none">A simple walkthrough of how we process our hard-hitting kicks and snares.</p>
               <div className="pt-2 md:pt-4 border-t border-outline-variant flex justify-between items-center">
                 <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest">READ_ARTICLE</span>
-                <span className="material-symbols-outlined text-sm md:text-base">north_east</span>
+                <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
               </div>
             </div>
             
@@ -132,7 +135,7 @@ export default function Home() {
               <p className="text-[10px] md:text-sm text-on-surface-variant mb-4 md:mb-6 leading-relaxed line-clamp-2 md:line-clamp-none">Why we use hardware gear to give your beats that warm industrial edge.</p>
               <div className="pt-2 md:pt-4 border-t border-outline-variant flex justify-between items-center">
                 <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest">READ_ARTICLE</span>
-                <span className="material-symbols-outlined text-sm md:text-base">north_east</span>
+                <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
               </div>
             </div>
             
@@ -149,7 +152,7 @@ export default function Home() {
               <p className="text-[10px] md:text-sm text-on-surface-variant mb-4 md:mb-6 leading-relaxed line-clamp-2 md:line-clamp-none">We're collecting new samples from the city's depths. Get ready.</p>
               <div className="pt-2 md:pt-4 border-t border-outline-variant flex justify-between items-center">
                 <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest">READ_ARTICLE</span>
-                <span className="material-symbols-outlined text-sm md:text-base">north_east</span>
+                <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
               </div>
             </div>
           </div>
