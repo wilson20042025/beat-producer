@@ -25,6 +25,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("inventory");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [showBeatForm, setShowBeatForm] = useState(false);
   const [user, setUser] = useState<any>(null);
 
   // Data State
@@ -198,13 +199,126 @@ export default function AdminDashboard() {
                   <div className="flex justify-between items-center">
                     <h2 className="font-headline text-3xl font-black uppercase italic">BEAT_ARCHIVE</h2>
                     <button 
-                        onClick={() => alert("Upload Logic Terminal: Please use the Add Project structure as a baseline for audio uploads or contact system admin.")}
-                        className="bg-zinc-50 text-zinc-950 px-8 py-3 font-headline font-black text-xs uppercase tracking-widest hover:invert transition-all flex items-center gap-3"
+                        onClick={() => setShowBeatForm(!showBeatForm)}
+                        className={`px-8 py-3 font-headline font-black text-xs uppercase tracking-widest transition-all flex items-center gap-3 ${
+                            showBeatForm ? "bg-zinc-800 text-zinc-500 hover:text-white" : "bg-zinc-50 text-zinc-950 hover:invert"
+                        }`}
                     >
-                        <Plus size={16} />
-                        UPLOAD_NEW_BEAT
+                        {showBeatForm ? <Plus className="rotate-45 transition-transform" /> : <Plus />}
+                        {showBeatForm ? "CANCEL_UPLOAD" : "UPLOAD_NEW_BEAT"}
                     </button>
                   </div>
+
+                  {showBeatForm && (
+                      <div className="bg-zinc-900/50 border border-zinc-800 p-8 animate-[fadeIn_0.3s_ease-out]">
+                         <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-6 border-b border-zinc-800 pb-2">INITIALIZE_NEW_SIGNAL_ASSET</p>
+                         <form onSubmit={async (e) => {
+                             e.preventDefault();
+                             const form = e.target as HTMLFormElement;
+                             const audioFile = (form.querySelector('input[name="audio"]') as HTMLInputElement).files?.[0];
+                             const artFile = (form.querySelector('input[name="art"]') as HTMLInputElement).files?.[0];
+                             const title = (form.querySelector('input[name="title"]') as HTMLInputElement).value;
+                             const genre = (form.querySelector('input[name="genre"]') as HTMLInputElement).value;
+                             const bpm = (form.querySelector('input[name="bpm"]') as HTMLInputElement).value;
+                             const tags = (form.querySelector('input[name="tags"]') as HTMLInputElement).value;
+                             const isFeatured = (form.querySelector('input[name="is_featured"]') as HTMLInputElement).checked;
+
+                             if (!audioFile) return alert("AUDIO_REQUIRED: No signal source identified.");
+
+                             setUploading(true);
+                             try {
+                                const audioUrl = await uploadFile(audioFile, 'beats/audio');
+                                let artUrl = null;
+                                if (artFile) {
+                                    artUrl = await uploadFile(artFile, 'beats/art');
+                                }
+
+                                const { error } = await supabase.from('beats').insert([{
+                                    title,
+                                    genre,
+                                    bpm: parseInt(bpm),
+                                    audio_url: audioUrl,
+                                    art_url: artUrl,
+                                    is_featured: isFeatured,
+                                    tags: tags.split(',').map(t => t.trim()).filter(t => t)
+                                }]);
+
+                                if (error) throw error;
+                                
+                                form.reset();
+                                setShowBeatForm(false);
+                                fetchData();
+                             } catch (err: any) {
+                                 alert(`UPLOAD_PROTOCOL_ERROR: ${err.message}`);
+                             } finally {
+                                 setUploading(false);
+                             }
+                         }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="space-y-2 lg:col-span-2">
+                                <label className="font-mono text-[9px] text-zinc-500 uppercase">Track_Title</label>
+                                <input name="title" required placeholder="SIGNAL_IDENTIFIER" className="w-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="font-mono text-[9px] text-zinc-500 uppercase">Tempo (BPM)</label>
+                                <input name="bpm" required type="number" defaultValue="140" className="w-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="font-mono text-[9px] text-zinc-500 uppercase">Style_Genre</label>
+                                <input name="genre" required placeholder="PHONK / DRILL" className="w-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="font-mono text-[9px] text-zinc-500 uppercase">Meta_Tags (Comma Separated)</label>
+                                <input name="tags" placeholder="DARK, HARD, 808" className="w-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                            </div>
+                            <div className="space-y-4 flex flex-col justify-end">
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox" name="is_featured" className="w-4 h-4 bg-zinc-950 border-zinc-800 checked:bg-zinc-50" />
+                                    <span className="font-mono text-[10px] text-zinc-500 uppercase group-hover:text-zinc-50 transition-colors">FEATURE_IN_MAIN_PORTFOLIO</span>
+                                </label>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="font-mono text-[9px] text-zinc-500 uppercase">Audio_Source (.MP3 / .WAV)</label>
+                                <div className="relative group">
+                                    <input type="file" name="audio" required accept="audio/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                    <div className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-[10px] flex items-center justify-between group-hover:border-zinc-50 transition-colors">
+                                        <span className="text-zinc-600">UPLOAD_SIGNAL</span>
+                                        <Music size={14} className="text-zinc-600 group-hover:text-zinc-50" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="font-mono text-[9px] text-zinc-500 uppercase">Visual_Asset (Cover Art)</label>
+                                <div className="relative group">
+                                    <input type="file" name="art" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                    <div className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-[10px] flex items-center justify-between group-hover:border-zinc-50 transition-colors">
+                                        <span className="text-zinc-600">UPLOAD_ART</span>
+                                        <ImageIcon size={14} className="text-zinc-600 group-hover:text-zinc-50" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="lg:col-span-1 pt-6">
+                                <button 
+                                    disabled={uploading}
+                                    className="w-full h-14 bg-zinc-50 text-zinc-950 font-black uppercase text-xs tracking-widest hover:invert transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <RefreshCw className="animate-spin" size={16} />
+                                            STREAMING_ASSETS...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <UploadCloud size={16} />
+                                            INITIALIZE_BEAT
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                         </form>
+                      </div>
+                  )}
 
                   <div className="border border-zinc-800 overflow-x-auto">
                     <table className="w-full text-left font-mono text-[10px] md:text-sm whitespace-nowrap">

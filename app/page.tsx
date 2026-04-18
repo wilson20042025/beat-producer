@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import { Footer } from "@/components/Footer";
@@ -17,32 +18,29 @@ interface Beat {
 
 export default function Home() {
   const [demos, setDemos] = useState<Beat[]>([]);
+  const [featuredProjects, setFeaturedProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchDemos() {
+    async function initHome() {
       try {
         setLoading(true);
-        // Fetch up to 3 featured beats
-        const { data, error } = await supabase
-          .from('beats')
-          .select('id, title, genre, bpm')
-          .eq('is_featured', true)
-          .limit(3);
+        // Fetch up to 3 featured beats and projects in parallel
+        const [beatsRes, projectsRes] = await Promise.all([
+          supabase.from('beats').select('id, title, genre, bpm').eq('is_featured', true).limit(3),
+          supabase.from('projects').select('*').order('date', { ascending: false }).limit(3)
+        ]);
 
-        if (data) {
-          setDemos(data as Beat[]);
-        } else if (error) {
-          console.error("Error fetching demo beats:", error);
-        }
+        if (beatsRes.data) setDemos(beatsRes.data as Beat[]);
+        if (projectsRes.data) setFeaturedProjects(projectsRes.data);
       } catch (err) {
-        console.error("Critical demo fetch error:", err);
+        console.error("Critical home data fetch error:", err);
       } finally {
         setLoading(false);
       }
     }
-
-    fetchDemos();
+    
+    initHome();
   }, []);
 
   return (
@@ -140,7 +138,42 @@ export default function Home() {
           </div>
         </section>
 
-        {/* --- Latest Updates Section --- */}
+        {/* --- Top Projects Section --- */}
+        <section className="px-4 md:px-12 py-12 md:py-24 border-b-2 border-outline-variant bg-zinc-900/10">
+          <div className="flex justify-between items-end mb-8 md:mb-12 border-b-2 border-zinc-800 pb-4">
+            <div>
+              <h3 className="font-headline text-2xl md:text-5xl font-black uppercase tracking-tighter italic">TOP_PROJECTS</h3>
+              <p className="font-mono text-[8px] md:text-[10px] text-zinc-500 uppercase tracking-[0.3em] mt-1">ARCHIVAL_SELECTION // HIT_RECORDS</p>
+            </div>
+            <Link href="/projects" className="font-mono text-[10px] text-outline underline cursor-pointer uppercase">ENTER_GALLERY</Link>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 md:gap-8">
+            {loading ? (
+                [...Array(3)].map((_, i) => (
+                    <div key={i} className="aspect-square bg-zinc-900 animate-pulse border border-zinc-800"></div>
+                ))
+            ) : featuredProjects.map((project) => (
+                <Link key={project.id} href="/projects" className="group flex flex-col gap-1 md:gap-4 relative">
+                    <div className="relative aspect-square bg-zinc-950 overflow-hidden border border-zinc-800 group-hover:border-primary transition-all duration-300">
+                        <img 
+                            className="absolute inset-0 w-full h-full object-cover grayscale brightness-75 group-hover:scale-105 group-hover:brightness-100 transition-all duration-700" 
+                            src={project.image_url}
+                            alt={project.title}
+                        />
+                        <div className="absolute inset-x-0 bottom-0 py-2 md:py-4 px-2 md:px-6 bg-gradient-to-t from-black to-transparent">
+                            <h4 className="font-headline text-[9px] md:text-2xl font-black uppercase text-zinc-50 tracking-tighter truncate leading-none">
+                                {project.title}
+                            </h4>
+                            <div className="flex justify-between items-center opacity-70 mt-1">
+                                <span className="font-mono text-[6px] md:text-[10px] text-zinc-400 uppercase tracking-tighter">{project.category}</span>
+                            </div>
+                        </div>
+                    </div>
+                </Link>
+            ))}
+          </div>
+        </section>
         <section className="px-4 md:px-12 py-10 md:py-24">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-baseline mb-6 md:mb-16 gap-4">
             <h2 className="font-headline text-2xl md:text-5xl font-black uppercase tracking-tighter">
