@@ -1,24 +1,68 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import { Play } from "lucide-react";
+
+interface Beat {
+  id: string;
+  title: string;
+  genre: string;
+  bpm: number;
+  tags: string[];
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
 
 export default function CatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [beats, setBeats] = useState<Beat[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const categories = ['Trap', 'Drill', 'Phonk', 'Jersey Club', 'Dark', 'R&B'];
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        
+        // Fetch Categories
+        const { data: catData, error: catError } = await supabase
+          .from('categories')
+          .select('name')
+          .order('name');
+        
+        if (catData) setCategories(catData.map(c => c.name));
+        if (catError) console.error("Error fetching categories:", catError);
 
-  const beats = [
-    { id: "001", title: "KINETIC_FLOW", genre: "TRAP / DARK", bpm: "140", tags: ["Trap", "Dark"] },
-    { id: "002", title: "BRUTAL_VOID", genre: "DRILL / INDUSTRIAL", bpm: "144", tags: ["Drill"] },
-    { id: "003", title: "NEON_DEBT", genre: "SYNTH / PHONK", bpm: "128", tags: ["Phonk"] },
-    { id: "004", title: "URBAN_ECHO", genre: "R&B / SOUL", bpm: "95", tags: ["R&B"] },
-  ];
+        // Fetch Beats
+        const { data: beatData, error: beatError } = await supabase
+          .from('beats')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (beatData) {
+          setBeats(beatData as Beat[]);
+        }
+        if (beatError) console.error("Error fetching beats:", beatError);
+        
+      } catch (err) {
+        console.error("Critical fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   const filteredBeats = selectedCategory 
-    ? beats.filter(b => b.tags.includes(selectedCategory))
+    ? beats.filter(b => b.tags?.includes(selectedCategory))
     : beats;
 
   return (
@@ -66,43 +110,55 @@ export default function CatalogPage() {
 
         {/* --- Catalog List / Grid --- */}
         <section className={`border-t-2 border-zinc-800 grid grid-cols-2 lg:grid-cols-1 gap-px bg-zinc-800 ${!selectedCategory ? 'hidden md:grid' : 'grid'}`}>
-          {filteredBeats.map((beat) => (
-            <div key={beat.id} className="group bg-zinc-950 hover:bg-zinc-900/50 transition-colors duration-150">
-              <div className="flex flex-col lg:flex-row items-stretch lg:min-h-[180px]">
-                <div className="hidden lg:flex w-32 items-center justify-center border-r border-zinc-800 py-8">
-                  <span className="font-headline text-5xl font-black text-zinc-100 opacity-20 group-hover:opacity-100 transition-opacity">{beat.id}</span>
-                </div>
-                
-                <Link 
-                  href={`/catalog/${beat.id}`}
-                  className="flex-grow flex flex-col items-center justify-between px-4 py-6 md:px-8 md:py-8 gap-4 text-center lg:text-left lg:flex-row hover:bg-zinc-900 transition-all cursor-pointer group/data"
-                >
-                  <div className="w-full">
-                    <h3 className="font-headline text-sm md:text-3xl font-bold uppercase tracking-tight text-zinc-100 truncate group-hover/data:text-primary transition-colors">{beat.title}</h3>
-                    <p className="font-mono text-[8px] md:text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{beat.genre}</p>
-                    <div className="lg:hidden mt-2 font-headline text-xs font-bold text-zinc-400">{beat.bpm} BPM</div>
+          {loading ? (
+            <div className="col-span-full py-24 flex items-center justify-center bg-zinc-950">
+               <p className="font-mono text-xs uppercase tracking-[0.5em] animate-pulse">Initializing_Catalog_Data...</p>
+            </div>
+          ) : filteredBeats.length > 0 ? (
+            filteredBeats.map((beat) => (
+              <div key={beat.id} className="group bg-zinc-950 hover:bg-zinc-900/50 transition-colors duration-150">
+                <div className="flex flex-col lg:flex-row items-stretch lg:min-h-[180px]">
+                  <div className="hidden lg:flex w-32 items-center justify-center border-r border-zinc-800 py-8">
+                    <span className="font-headline text-2xl font-black text-zinc-100 opacity-20 group-hover:opacity-100 transition-opacity uppercase truncate px-2">
+                        {beat.title.slice(0, 3)}
+                    </span>
                   </div>
                   
-                  <div className="hidden lg:flex flex-col items-end w-32">
-                    <span className="font-headline text-2xl font-bold text-zinc-100">{beat.bpm}</span>
-                    <span className="font-mono text-[10px] text-zinc-500 uppercase">BPM</span>
-                  </div>
-                </Link>
-
-                <div className="w-full lg:w-64 flex flex-row items-stretch border-t lg:border-t-0 lg:border-l border-zinc-800">
-                  <button className="flex-1 flex items-center justify-center p-3 md:p-6 border-r border-zinc-800 hover:bg-zinc-800 transition-colors">
-                    <span className="material-symbols-outlined text-xl md:text-3xl text-zinc-50">play_arrow</span>
-                  </button>
                   <Link 
                     href={`/catalog/${beat.id}`}
-                    className="flex-[2] bg-zinc-50 text-zinc-950 font-black uppercase text-[10px] md:text-xs tracking-widest px-4 md:px-8 py-3 md:py-6 active:scale-95 transition-all text-center flex items-center justify-center"
+                    className="flex-grow flex flex-col items-center justify-between px-4 py-6 md:px-8 md:py-8 gap-4 text-center lg:text-left lg:flex-row hover:bg-zinc-900 transition-all cursor-pointer group/data"
                   >
-                    BUY
+                    <div className="w-full">
+                      <h3 className="font-headline text-sm md:text-3xl font-bold uppercase tracking-tight text-zinc-100 truncate group-hover/data:text-primary transition-colors">{beat.title}</h3>
+                      <p className="font-mono text-[8px] md:text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{beat.genre}</p>
+                      <div className="lg:hidden mt-2 font-headline text-xs font-bold text-zinc-400">{beat.bpm} BPM</div>
+                    </div>
+                    
+                    <div className="hidden lg:flex flex-col items-end w-32">
+                      <span className="font-headline text-2xl font-bold text-zinc-100">{beat.bpm}</span>
+                      <span className="font-mono text-[10px] text-zinc-500 uppercase">BPM</span>
+                    </div>
                   </Link>
+  
+                  <div className="w-full lg:w-64 flex flex-row items-stretch border-t lg:border-t-0 lg:border-l border-zinc-800">
+                    <button className="flex-1 flex items-center justify-center p-3 md:p-6 border-r border-zinc-800 hover:bg-zinc-800 transition-colors">
+                      <Play className="w-6 h-6 md:w-8 md:h-8 text-zinc-50 fill-current" />
+                    </button>
+                    <Link 
+                      href={`/catalog/${beat.id}`}
+                      className="flex-[2] bg-zinc-50 text-zinc-950 font-black uppercase text-[10px] md:text-xs tracking-widest px-4 md:px-8 py-3 md:py-6 active:scale-95 transition-all text-center flex items-center justify-center"
+                    >
+                      BUY
+                    </Link>
+                  </div>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="col-span-full py-24 flex items-center justify-center bg-zinc-950">
+               <p className="font-mono text-xs uppercase tracking-[0.3em] text-zinc-600">No_Beats_Found_In_This_Sector</p>
             </div>
-          ))}
+          )}
         </section>
 
         {/* --- Licensing & Packs --- */}
@@ -137,7 +193,7 @@ export default function CatalogPage() {
               <button className="bg-zinc-50 text-zinc-950 font-black uppercase px-10 md:px-12 py-3 md:py-4 tracking-tighter text-base md:text-lg hover:scale-105 transition-transform">Get Here</button>
             </div>
             <div className="absolute -right-16 -bottom-16 md:-right-20 md:-bottom-20 opacity-10 group-hover:opacity-20 transition-opacity">
-              <span className="material-symbols-outlined text-[200px] md:text-[300px]" style={{ fontVariationSettings: "'FILL' 1" }}>album</span>
+               <div className="w-[200px] md:w-[300px] h-[200px] md:h-[300px] border-8 border-zinc-50 rounded-full animate-[spin_10s_linear_infinite]"></div>
             </div>
           </div>
         </section>

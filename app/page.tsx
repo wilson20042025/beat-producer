@@ -1,15 +1,49 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import { Footer } from "@/components/Footer";
 import { ArrowRight, Play, Heart, ArrowUpRight } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+interface Beat {
+  id: string;
+  title: string;
+  genre: string;
+  bpm: number;
+  duration?: string;
+}
 
 export default function Home() {
-  const demos = [
-    { id: "01", title: "VANTABLACK", genre: "TRAP", bpm: "145", dur: "03:12" },
-    { id: "02", title: "URBAN_ECHO", genre: "DRILL", bpm: "142", dur: "02:45" },
-    { id: "03", title: "NEON_FLUX", genre: "WAVEY", bpm: "128", dur: "03:30" },
-  ];
+  const [demos, setDemos] = useState<Beat[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDemos() {
+      try {
+        setLoading(true);
+        // Fetch up to 3 featured beats
+        const { data, error } = await supabase
+          .from('beats')
+          .select('id, title, genre, bpm')
+          .eq('is_featured', true)
+          .limit(3);
+
+        if (data) {
+          setDemos(data as Beat[]);
+        } else if (error) {
+          console.error("Error fetching demo beats:", error);
+        }
+      } catch (err) {
+        console.error("Critical demo fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchDemos();
+  }, []);
 
   return (
     <>
@@ -55,42 +89,54 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-3 gap-1.5 md:gap-6">
-            {demos.map((demo) => (
-              <div key={demo.id} className="group relative bg-zinc-900/50 border border-zinc-800 md:border-2 p-2 md:p-6 hover:border-zinc-50 transition-all flex flex-col gap-2 md:gap-6">
-                <div className="flex justify-between items-start">
-                  <span className="font-mono text-[6px] md:text-[10px] bg-zinc-800 text-zinc-400 px-1.5 md:px-2 py-0.5 md:py-1">{demo.id}</span>
-                  <div className="flex flex-col items-end gap-0.5">
-                    <span className="font-mono text-[5px] md:text-[8px] text-zinc-600 uppercase hidden md:block">GENRE: {demo.genre}</span>
-                    <span className="font-mono text-[5px] md:text-[8px] text-zinc-600 uppercase">BPM: {demo.bpm}</span>
-                  </div>
+            {loading ? (
+                <div className="col-span-3 py-10 md:py-20 flex items-center justify-center bg-zinc-950 border border-zinc-900 border-dashed">
+                    <p className="font-mono text-[8px] md:text-xs uppercase tracking-[0.4em] animate-pulse">Establishing_Stream_Connection...</p>
                 </div>
-                
-                <div className="flex-1">
-                  <h4 className="font-headline text-[9px] md:text-3xl font-black uppercase tracking-tighter leading-none group-hover:text-primary transition-colors truncate">
-                    {demo.title}
-                  </h4>
-                  <div className="mt-2 md:mt-4 flex items-center gap-2 md:gap-4">
-                     <button className="w-8 h-8 md:w-12 md:h-12 bg-zinc-50 text-zinc-950 rounded-full flex items-center justify-center hover:bg-primary hover:text-zinc-50 transition-colors">
-                        <Play className="w-4 h-4 md:w-6 md:h-6 fill-current" />
-                     </button>
-                     <div className="flex-1 h-[1px] md:h-[2px] bg-zinc-800 relative overflow-hidden hidden md:block">
-                        <div className="absolute inset-0 bg-primary/20 animate-pulse"></div>
-                     </div>
-                  </div>
+            ) : demos.length > 0 ? (
+                demos.map((demo, index) => (
+                    <div key={demo.id} className="group relative bg-zinc-900/50 border border-zinc-800 md:border-2 p-2 md:p-6 hover:border-zinc-50 transition-all flex flex-col gap-2 md:gap-6">
+                      <div className="flex justify-between items-start">
+                        <span className="font-mono text-[6px] md:text-[10px] bg-zinc-800 text-zinc-400 px-1.5 md:px-2 py-0.5 md:py-1">
+                            { (index + 1).toString().padStart(2, '0') }
+                        </span>
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span className="font-mono text-[5px] md:text-[8px] text-zinc-600 uppercase hidden md:block">GENRE: {demo.genre}</span>
+                          <span className="font-mono text-[5px] md:text-[8px] text-zinc-600 uppercase">BPM: {demo.bpm}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <h4 className="font-headline text-[9px] md:text-3xl font-black uppercase tracking-tighter leading-none group-hover:text-primary transition-colors truncate">
+                          {demo.title}
+                        </h4>
+                        <div className="mt-2 md:mt-4 flex items-center gap-2 md:gap-4">
+                           <button className="w-8 h-8 md:w-12 md:h-12 bg-zinc-50 text-zinc-950 rounded-full flex items-center justify-center hover:bg-primary hover:text-zinc-50 transition-colors">
+                              <Play className="w-4 h-4 md:w-6 md:h-6 fill-current" />
+                           </button>
+                           <div className="flex-1 h-[1px] md:h-[2px] bg-zinc-800 relative overflow-hidden hidden md:block">
+                              <div className="absolute inset-x-0 inset-y-0 bg-primary/20 animate-pulse"></div>
+                           </div>
+                        </div>
+                      </div>
+      
+                      <div className="flex justify-between items-center pt-2 md:pt-4 border-t border-zinc-800">
+                        <span className="font-mono text-[6px] md:text-[10px] text-zinc-500">DYNAMIC_SRC</span>
+                        <button className="md:hidden text-zinc-400 hover:text-primary transition-colors">
+                          <Heart className="w-3 h-3" strokeWidth={3} />
+                        </button>
+                        <button className="hidden md:block group/like flex items-center gap-2 border border-zinc-800 px-3 py-1 hover:border-zinc-50 transition-all">
+                          <Heart className="w-3 h-3 group-hover/like:text-primary transition-colors" strokeWidth={3} />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">LIKE</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+            ) : (
+                <div className="col-span-3 py-10 md:py-20 flex flex-col items-center justify-center bg-zinc-950 border border-zinc-900 border-dashed">
+                    <p className="font-mono text-[8px] md:text-xs uppercase tracking-[0.2em] text-zinc-700">No_Demo_Assets_Identified</p>
                 </div>
-
-                <div className="flex justify-between items-center pt-2 md:pt-4 border-t border-zinc-800">
-                  <span className="font-mono text-[6px] md:text-[10px] text-zinc-500">{demo.dur}</span>
-                  <button className="md:hidden text-zinc-400 hover:text-primary transition-colors">
-                    <Heart className="w-3 h-3" strokeWidth={3} />
-                  </button>
-                  <button className="hidden md:block group/like flex items-center gap-2 border border-zinc-800 px-3 py-1 hover:border-zinc-50 transition-all">
-                    <Heart className="w-3 h-3 group-hover/like:text-primary transition-colors" strokeWidth={3} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">LIKE</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+            )}
           </div>
         </section>
 

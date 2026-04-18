@@ -1,38 +1,69 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import { Play, ChevronLeft, ShieldCheck, Download } from "lucide-react";
 
 interface Beat {
   id: string;
   title: string;
   genre: string;
-  bpm: string;
-  tags: string[];
-  description: string;
+  bpm: number;
+  price_basic: number;
+  price_premium: number;
+  price_exclusive: number;
+  audio_url: string;
 }
-
-const BEAT_DATA: Record<string, Beat> = {
-  "001": { id: "001", title: "KINETIC_FLOW", genre: "TRAP / DARK", bpm: "140", tags: ["Trap", "Dark"], description: "Aggressive industrial trap with heavy distorted 808s and sharp percussive layers." },
-  "002": { id: "002", title: "BRUTAL_VOID", genre: "DRILL / INDUSTRIAL", bpm: "144", tags: ["Drill"], description: "Experimental drill atmosphere inspired by brutalist architecture and rhythmic distortion." },
-  "003": { id: "003", title: "NEON_DEBT", genre: "SYNTH / PHONK", bpm: "128", tags: ["Phonk"], description: "Low-fidelity synth layers meeting high-energy phonk percussion." },
-  "004": { id: "004", title: "URBAN_ECHO", genre: "R&B / SOUL", bpm: "95", tags: ["R&B"], description: "Chilled late-night R&B textures with warm analog saturation and soulful harmonic shifts." },
-};
 
 export default function BeatDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const beat = BEAT_DATA[id];
-  const [isHoveringArt, setIsHoveringArt] = useState(false);
+  
+  const [beat, setBeat] = useState<Beat | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchBeat() {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('beats')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (data) setBeat(data as Beat);
+        if (error) console.error("Error fetching beat details:", error);
+      } catch (err) {
+        console.error("Critical beat fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (id) fetchBeat();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-zinc-50 font-mono gap-4">
+        <p className="text-xl animate-pulse uppercase tracking-[0.5em]">Establishing_Signal_Link...</p>
+      </div>
+    );
+  }
 
   if (!beat) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-zinc-50 font-mono">
-        <p className="text-xl animate-pulse uppercase tracking-[0.5em]">Beat_Not_Found</p>
-        <Link href="/catalog" className="mt-8 border border-zinc-700 px-6 py-2 hover:bg-zinc-50 hover:text-zinc-950 transition-all uppercase text-[10px] tracking-widest">Return_to_Catalog</Link>
+        <p className="text-xl animate-pulse uppercase tracking-[0.5em]">Beat_Archive_Error</p>
+        <Link href="/catalog" className="mt-8 border border-zinc-700 px-6 py-2 hover:bg-zinc-50 hover:text-zinc-950 transition-all uppercase text-[10px] tracking-widest flex items-center gap-2">
+            <ChevronLeft size={14} />
+            Return_to_Catalog
+        </Link>
       </div>
     );
   }
@@ -40,115 +71,63 @@ export default function BeatDetailPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen pt-24 pb-32 px-4 md:px-12 lg:px-24">
-        {/* Navigation Breadcrumb */}
-        <div className="flex items-center gap-4 mb-12 opacity-50 hover:opacity-100 transition-opacity">
-          <Link href="/catalog" className="font-mono text-xs uppercase tracking-widest flex items-center gap-2">
-            <span className="material-symbols-outlined text-sm">arrow_back</span>
-            Back_to_Archive
-          </Link>
+      <main className="min-h-screen pt-20 pb-32 px-4 md:px-12 flex flex-col items-center">
+        {/* Simple Header */}
+        <div className="w-full max-w-4xl border-b-2 border-zinc-800 pb-8 mb-12">
+            <Link href="/catalog" className="font-mono text-[10px] text-zinc-500 hover:text-zinc-50 transition-colors uppercase tracking-[0.3em] mb-4 inline-flex items-center gap-2">
+                <ChevronLeft size={12} />
+                [ BACK_TO_CATALOG ]
+            </Link>
+            <h1 className="font-headline text-5xl md:text-8xl font-black uppercase tracking-tighter italic leading-none">{beat.title}</h1>
+            <p className="font-mono text-xs text-zinc-400 mt-4 tracking-[0.2em]">{beat.genre} // {beat.bpm} BPM</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24">
-          {/* Left Column: Visual & Controls */}
-          <div className="lg:col-span-7 space-y-12">
-            <div 
-              className="relative aspect-square bg-zinc-900 border-2 border-zinc-800 overflow-hidden group cursor-crosshair shadow-2xl"
-              onMouseEnter={() => setIsHoveringArt(true)}
-              onMouseLeave={() => setIsHoveringArt(false)}
-            >
-              {/* Grayscale Cover Art Placeholder/Visualizer */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                 <span className="font-headline text-[20vw] font-black italic text-zinc-800 select-none group-hover:scale-110 transition-transform duration-700">
-                    {beat.id}
-                 </span>
-              </div>
-              
-              {/* Corner Metadata */}
-              <div className="absolute top-6 left-6 flex flex-col gap-1">
-                <span className="bg-zinc-50 text-zinc-950 px-2 py-0.5 text-[10px] font-black uppercase">LXB_SNC_PRTCL</span>
-                <span className="font-mono text-[8px] text-zinc-400 uppercase tracking-widest">SRL_000{beat.id}</span>
-              </div>
-
-              {/* Scanned Texture Overlay */}
-              <div className="absolute inset-0 grainy-overlay opacity-30 mix-blend-overlay pointer-events-none"></div>
-              <div className={`absolute inset-0 bg-white mix-blend-difference transition-opacity duration-500 pointer-events-none ${isHoveringArt ? 'opacity-5' : 'opacity-0'}`}></div>
-            </div>
-
-            {/* Integrated Player Control */}
-            <div className="bg-zinc-900/50 border-2 border-zinc-800 p-8 flex flex-col gap-8">
-              <div className="flex justify-between items-center mr-4">
-                <button className="w-20 h-20 bg-zinc-50 text-zinc-950 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl">
-                  <span className="material-symbols-outlined text-4xl">play_arrow</span>
-                </button>
-                <div className="flex-1 ml-10 flex flex-col gap-4">
-                   <div className="flex justify-between font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
-                      <span>00:00:00</span>
-                      <span>STREAM_QUALITY_FIX_320K</span>
-                      <span>03:45:00</span>
-                   </div>
-                   <div className="h-[4px] bg-zinc-800 relative group cursor-pointer overflow-hidden">
-                      <div className="absolute inset-y-0 left-0 bg-zinc-50 w-1/3"></div>
-                      <div className="absolute inset-0 bg-zinc-50/10 group-hover:bg-zinc-50/20 transition-colors"></div>
-                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Information & Licensing */}
-          <div className="lg:col-span-5 flex flex-col gap-12">
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <span className="font-mono text-xs bg-zinc-800 px-3 py-1 text-zinc-400">NO_{beat.id}</span>
-                <span className="font-mono text-xs border border-zinc-800 px-3 py-1 text-zinc-500">2024_RELEASE_ALPHA</span>
-              </div>
-              <h1 className="font-headline text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter italic leading-none break-words">
-                {beat.title}
-              </h1>
-              <p className="font-mono text-sm uppercase tracking-widest text-zinc-400 pt-2 border-t-4 border-zinc-50 inline-block">
-                {beat.genre} // {beat.bpm} BPM
-              </p>
-              <p className="text-base text-zinc-500 leading-relaxed max-w-sm pt-4">
-                {beat.description}
-              </p>
-            </div>
-
-            {/* Licensing Stream */}
-            <div className="space-y-4">
-              <p className="font-headline text-[10px] tracking-[0.4em] text-zinc-600 uppercase mb-6">SELECT_LICENSE_PROTOCOL</p>
-              
-              <div className="group flex justify-between items-center border-2 border-zinc-800 p-6 hover:border-zinc-50 transition-colors cursor-pointer bg-zinc-950">
-                <div className="flex flex-col gap-1">
-                  <span className="font-headline font-bold text-lg uppercase group-hover:text-primary transition-colors">Basic_Lease</span>
-                  <span className="font-mono text-[9px] text-zinc-600 uppercase">MP3 + WAVE_FILE // USAGE_LIMITS_APPLY</span>
-                </div>
-                <span className="font-headline font-black text-2xl">$29.99</span>
-              </div>
-
-              <div className="group flex justify-between items-center border-4 border-zinc-50 p-6 bg-zinc-50 text-zinc-950 transition-colors cursor-pointer">
-                <div className="flex flex-col gap-1">
-                  <span className="font-headline font-bold text-lg uppercase">Premium_Lease</span>
-                  <span className="font-mono text-[9px] text-zinc-950/60 uppercase">TRACKOUTS + WAV_FILE // UNLIMITED_STREAMS</span>
-                </div>
-                <span className="font-headline font-black text-2xl">$79.99</span>
-              </div>
-
-              <div className="group flex justify-between items-center border-2 border-zinc-800 p-6 hover:border-zinc-50 transition-colors cursor-pointer bg-zinc-950">
-                <div className="flex flex-col gap-1">
-                  <span className="font-headline font-bold text-lg uppercase group-hover:text-primary transition-colors">Exclusive_Ownership</span>
-                  <span className="font-mono text-[9px] text-zinc-600 uppercase">FULL_RIGHTS // CONTRACT_PERSONALIZATION</span>
-                </div>
-                <span className="font-headline font-black text-2xl">$499+</span>
-              </div>
-            </div>
-
-            <button className="w-full bg-zinc-50 text-zinc-950 py-8 font-headline font-black text-2xl uppercase tracking-tighter hover:invert transition-all flex justify-between items-center px-12 group">
-              <span>SECURE_FILE_NOW</span>
-              <span className="material-symbols-outlined text-4xl group-hover:translate-x-2 transition-all">shopping_cart</span>
+        {/* Simplified Player */}
+        <div className="w-full max-w-4xl bg-zinc-900 border border-zinc-800 p-6 md:p-12 mb-12 flex items-center gap-8">
+            <button className="w-16 h-16 md:w-24 md:h-24 bg-zinc-50 text-zinc-950 rounded-full flex items-center justify-center shrink-0 hover:scale-105 active:scale-95 transition-all">
+                <Play className="w-8 h-8 md:w-12 md:h-12 fill-current" />
             </button>
-          </div>
+            <div className="flex-1 space-y-4">
+                <div className="flex justify-between font-mono text-[10px] text-zinc-500">
+                    <span>0:00</span>
+                    <span className="animate-pulse">STREAMING_FROM_CLOUDINARY</span>
+                    <span>--:--</span>
+                </div>
+                <div className="h-1 bg-zinc-800 relative w-full overflow-hidden">
+                    <div className="absolute inset-y-0 left-0 bg-zinc-50 w-0"></div>
+                </div>
+            </div>
         </div>
+
+        {/* Simplified Options */}
+        <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+            <div className="border border-zinc-800 p-6 hover:border-zinc-50 transition-colors cursor-pointer group">
+                <p className="font-mono text-[10px] text-zinc-500 uppercase mb-2">Basic Lease</p>
+                <div className="flex items-baseline gap-2">
+                    <p className="font-headline text-2xl font-black group-hover:text-primary transition-colors">${beat.price_basic || '29.99'}</p>
+                    <span className="font-mono text-[8px] text-zinc-600">MP3</span>
+                </div>
+            </div>
+            <div className="border-2 border-zinc-50 p-6 bg-zinc-50 text-zinc-950 cursor-pointer">
+                <p className="font-mono text-[10px] text-zinc-950/60 uppercase mb-2">Premium Lease</p>
+                <div className="flex items-baseline gap-2">
+                    <p className="font-headline text-2xl font-black">${beat.price_premium || '79.99'}</p>
+                    <span className="font-mono text-[8px] text-zinc-900/60">WAV + MP3</span>
+                </div>
+            </div>
+            <div className="border border-zinc-800 p-6 hover:border-zinc-50 transition-colors cursor-pointer group">
+                <p className="font-mono text-[10px] text-zinc-500 uppercase mb-2">Exclusive</p>
+                <div className="flex items-baseline gap-2">
+                    <p className="font-headline text-2xl font-black group-hover:text-primary transition-colors">${beat.price_exclusive || '499.00'}</p>
+                    <span className="font-mono text-[8px] text-zinc-600">STEMS + ALL</span>
+                </div>
+            </div>
+        </div>
+
+        <button className="w-full max-w-4xl bg-zinc-50 text-zinc-950 py-6 font-headline font-black text-xl md:text-2xl uppercase tracking-tighter hover:invert transition-all flex items-center justify-center gap-4">
+            <ShieldCheck size={28} />
+            SECURE_LICENSE_&_DOWNLOAD
+        </button>
       </main>
       <BottomNav />
     </>

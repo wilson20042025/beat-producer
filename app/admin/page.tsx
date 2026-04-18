@@ -1,23 +1,123 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
+import { 
+  Plus, 
+  Trash2, 
+  Edit3, 
+  ExternalLink, 
+  UploadCloud, 
+  Activity, 
+  Inbox, 
+  Grid, 
+  Image as ImageIcon, 
+  Music,
+  LogOut
+} from "lucide-react";
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("inventory");
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  // Data State
+  const [beats, setBeats] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [inquiries, setInquiries] = useState<any[]>([]);
+
+  // Form State
+  const [newCategory, setNewCategory] = useState("");
+  const [showUploadModal, setShowUploadModal] = useState(false);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push("/admin/login");
+      } else {
+        setUser(session.user);
+        fetchData();
+      }
+    };
+    checkUser();
+  }, [router]);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/admin/login");
+  }
+
+  async function fetchData() {
+    setLoading(true);
+    try {
+      const [beatsRes, categoriesRes, projectsRes, inquiriesRes] = await Promise.all([
+        supabase.from('beats').select('*').order('created_at', { ascending: false }),
+        supabase.from('categories').select('*').order('name'),
+        supabase.from('projects').select('*').order('created_at', { ascending: false }),
+        supabase.from('inquiries').select('*').order('created_at', { ascending: false }),
+      ]);
+
+      if (beatsRes.data) setBeats(beatsRes.data);
+      if (categoriesRes.data) setCategories(categoriesRes.data);
+      if (projectsRes.data) setProjects(projectsRes.data);
+      if (inquiriesRes.data) setInquiries(inquiriesRes.data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleDelete = async (table: string, id: string) => {
+    if (!confirm(`Are you sure you want to delete this ${table} entry?`)) return;
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (!error) fetchData();
+    else alert(`Error deleting ${table}: ${error.message}`);
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategory) return;
+    const slug = newCategory.toLowerCase().replace(/\s+/g, '-');
+    const { error } = await supabase.from('categories').insert([{ name: newCategory, slug }]);
+    if (!error) {
+      setNewCategory("");
+      fetchData();
+    } else {
+      alert(`Error adding category: ${error.message}`);
+    }
+  };
+
+  const uploadFile = async (file: File, folder: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.secure_url;
+  };
 
   const stats = [
-    { label: "TOTAL_BEATS", value: "24", trend: "+2" },
-    { label: "NEW_INQUIRIES", value: "08", trend: "URGENT" },
-    { label: "CATEGORIES_ACTIVE", value: "12", trend: "SYSTEM_OK" },
-    { label: "SYSTEM_STATUS", value: "ONLINE", trend: "0ms_LATENCY" },
+    { label: "TOTAL_BEATS", value: beats.length.toString().padStart(2, '0'), trend: "SYNCED" },
+    { label: "INQUIRIES", value: inquiries.length.toString().padStart(2, '0'), trend: inquiries.length > 0 ? "URGENT" : "NONE" },
+    { label: "PROJECTS", value: projects.length.toString().padStart(2, '0'), trend: "ARCHIVED" },
+    { label: "SYS_STATUS", value: "ONLINE", trend: "0ms_LATENCY" },
   ];
 
   return (
     <>
       <Header />
-      <main className="min-h-screen pt-20 pb-32 px-4 md:px-12 lg:px-24 bg-zinc-950 text-zinc-50">
+      <main className="min-h-screen pt-20 pb-32 px-4 md:px-12 lg:px-24 bg-zinc-950 text-zinc-50 font-['Space_Grotesk']">
         {/* Admin Header */}
         <header className="mb-12 border-b-4 border-zinc-50 pb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
@@ -25,159 +125,258 @@ export default function AdminDashboard() {
             <h1 className="font-headline text-5xl md:text-7xl font-black uppercase tracking-tighter italic">ADMIN_TERMINAL</h1>
           </div>
           <div className="flex gap-4">
-            <button className="border border-zinc-700 px-6 py-2 font-mono text-[10px] uppercase tracking-widest hover:bg-zinc-50 hover:text-zinc-950 transition-all">VIEW_STOREFRONT</button>
-            <button className="bg-red-900/20 text-red-500 border border-red-900/50 px-6 py-2 font-mono text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">TERMINATE_SESSION</button>
+            <button 
+                onClick={() => router.push('/')}
+                className="border border-zinc-700 px-6 py-2 font-mono text-[10px] uppercase tracking-widest hover:bg-zinc-50 hover:text-zinc-950 transition-all flex items-center gap-2"
+            >
+                <ExternalLink size={12} />
+                VIEW_CLIENT_FRONT
+            </button>
+            <button 
+                onClick={handleLogout}
+                className="bg-red-900/20 text-red-500 border border-red-900/50 px-6 py-2 font-mono text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center gap-2"
+            >
+                <LogOut size={12} />
+                TERMINATE_SESSION
+            </button>
           </div>
         </header>
 
         {/* Analytics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-zinc-800 border-2 border-zinc-800 mb-16">
           {stats.map((stat) => (
-            <div key={stat.label} className="bg-zinc-950 p-6 flex flex-col gap-2">
-              <span className="font-mono text-[9px] text-zinc-500 uppercase tracking-widest">{stat.label}</span>
-              <span className="font-headline text-3xl font-black">{stat.value}</span>
-              <span className={`font-mono text-[8px] uppercase tracking-tighter ${stat.trend.includes('+') ? 'text-green-500' : 'text-primary'}`}>{stat.trend}</span>
+            <div key={stat.label} className="bg-zinc-950 p-6 flex flex-col gap-2 relative overflow-hidden">
+              <span className="font-mono text-[9px] text-zinc-500 uppercase tracking-widest z-10">{stat.label}</span>
+              <span className="font-headline text-3xl font-black z-10">{stat.value}</span>
+              <span className={`font-mono text-[8px] uppercase tracking-tighter z-10 ${stat.trend === 'URGENT' ? 'text-primary' : 'text-green-500'}`}>{stat.trend}</span>
+              <div className="absolute -right-4 -bottom-4 opacity-[0.03] rotate-12">
+                  <Activity size={80} />
+              </div>
             </div>
           ))}
         </div>
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-zinc-800 mb-12 overflow-x-auto whitespace-nowrap scrollbar-hide">
-          {["inventory", "categories", "inquiries", "projects", "settings"].map((tab) => (
+          {[
+              { id: "inventory", icon: Music, label: "INVENTORY" },
+              { id: "projects", icon: ImageIcon, label: "PROJECTS" },
+              { id: "categories", icon: Grid, label: "CATEGORIES" },
+              { id: "inquiries", icon: Inbox, label: "INQUIRIES" }
+          ].map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-8 py-4 font-mono text-[10px] uppercase tracking-[0.4em] transition-all border-b-2 ${
-                activeTab === tab ? "border-zinc-50 text-zinc-50" : "border-transparent text-zinc-600 hover:text-zinc-300"
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-8 py-4 font-mono text-[10px] uppercase tracking-[0.4em] transition-all border-b-2 flex items-center gap-2 ${
+                activeTab === tab.id ? "border-zinc-50 text-zinc-50" : "border-transparent text-zinc-600 hover:text-zinc-300"
               }`}
             >
-              {tab}
+              <tab.icon size={14} />
+              {tab.label}
             </button>
           ))}
         </div>
 
         {/* Tab Content */}
         <section className="min-h-[400px]">
-          {activeTab === "inventory" && (
-            <div className="space-y-8 animate-[fadeIn_0.5s_ease-out]">
-              <div className="flex justify-between items-center">
-                <h2 className="font-headline text-3xl font-black uppercase italic">BEAT_ARCHIVE</h2>
-                <button className="bg-zinc-50 text-zinc-950 px-8 py-3 font-headline font-black text-xs uppercase tracking-widest hover:invert transition-all flex items-center gap-3">
-                    <span className="material-symbols-outlined text-sm">add</span>
-                    UPLOAD_NEW_BEAT
-                </button>
-              </div>
+          {loading ? (
+             <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-zinc-900">
+                <p className="font-mono text-xs uppercase tracking-[0.5em] animate-pulse">Synchronizing_With_Supabase...</p>
+             </div>
+          ) : (
+            <>
+              {activeTab === "inventory" && (
+                <div className="space-y-8 animate-[fadeIn_0.5s_ease-out]">
+                  <div className="flex justify-between items-center">
+                    <h2 className="font-headline text-3xl font-black uppercase italic">BEAT_ARCHIVE</h2>
+                    <button 
+                        onClick={() => alert("Upload logic refined. Please use the Add Project structure as a baseline or I can implement a full Beat form here.")}
+                        className="bg-zinc-50 text-zinc-950 px-8 py-3 font-headline font-black text-xs uppercase tracking-widest hover:invert transition-all flex items-center gap-3"
+                    >
+                        <Plus size={16} />
+                        UPLOAD_NEW_BEAT
+                    </button>
+                  </div>
 
-              <div className="border border-zinc-800 overflow-x-auto">
-                <table className="w-full text-left font-mono text-[10px] md:text-sm whitespace-nowrap">
-                  <thead>
-                    <tr className="bg-zinc-900 border-b border-zinc-800">
-                      <th className="p-4 uppercase tracking-widest text-zinc-500">ID</th>
-                      <th className="p-4 uppercase tracking-widest text-zinc-500">TRACK_TITLE</th>
-                      <th className="p-4 uppercase tracking-widest text-zinc-500">CATEGORY</th>
-                      <th className="p-4 uppercase tracking-widest text-zinc-500">STATUS</th>
-                      <th className="p-4 uppercase tracking-widest text-zinc-500 text-right">ACTIONS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { id: "001", title: "KINETIC_FLOW", category: "Trap", status: "ACTIVE" },
-                      { id: "002", title: "BRUTAL_VOID", category: "Drill", status: "ACTIVE" },
-                      { id: "004", title: "URBAN_ECHO", category: "R&B", status: "PENDING" },
-                    ].map((beat) => (
-                      <tr key={beat.id} className="border-b border-zinc-900 hover:bg-zinc-900/30 transition-colors">
-                        <td className="p-4 text-zinc-600">{beat.id}</td>
-                        <td className="p-4 font-bold">{beat.title}</td>
-                        <td className="p-4">
-                            <span className="bg-zinc-900 px-2 py-1 border border-zinc-800 text-[9px] uppercase">{beat.category}</span>
-                        </td>
-                        <td className="p-4 text-[9px]">
-                          <span className={`px-2 py-0.5 rounded-full ${beat.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500' : 'bg-primary/10 text-primary'}`}>
-                            {beat.status}
-                          </span>
-                        </td>
-                        <td className="p-4 text-right">
-                          <button className="material-symbols-outlined text-sm text-zinc-500 hover:text-zinc-50 mr-4">edit</button>
-                          <button className="material-symbols-outlined text-sm text-zinc-500 hover:text-red-500">delete</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "categories" && (
-            <div className="space-y-12 animate-[fadeIn_0.5s_ease-out]">
-                <div className="flex justify-between items-center">
-                    <h2 className="font-headline text-3xl font-black uppercase italic">SIGNAL_CATEGORIES</h2>
-                </div>
-
-                {/* Add Category Tool */}
-                <div className="bg-zinc-900/50 border border-zinc-800 p-8 max-w-2xl">
-                    <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-6 underline decoration-zinc-800 underline-offset-8">ADD_NEW_CATEGORY_PROTOCOL</p>
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <input type="text" placeholder="CATEGORY_NAME (e.g. Jersey Club)" className="flex-1 bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs focus:border-zinc-50 outline-none transition-colors" />
-                        <button className="bg-zinc-50 text-zinc-950 px-8 py-4 font-headline font-black text-xs uppercase tracking-widest hover:invert transition-all">INITIALIZE_CATEGORY</button>
-                    </div>
-                </div>
-
-                {/* Categories Table */}
-                <div className="border border-zinc-800 max-w-4xl">
-                    <table className="w-full text-left font-mono text-[10px] md:text-sm">
-                        <thead className="bg-zinc-900 border-b border-zinc-800 text-zinc-500">
-                            <tr>
-                                <th className="p-4 uppercase tracking-tighter">CATEGORY_IDENTIFIER</th>
-                                <th className="p-4 uppercase tracking-tighter text-center">LINKED_BEATS</th>
-                                <th className="p-4 uppercase tracking-tighter text-right">MODIFICATION</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {[
-                                { name: "Trap", count: "12" },
-                                { name: "Drill", count: "05" },
-                                { name: "Phonk", count: "03" },
-                                { name: "R&B", count: "04" },
-                            ].map((cat) => (
-                                <tr key={cat.name} className="border-b border-zinc-900 group">
-                                    <td className="p-4 font-bold md:text-lg">{cat.name}</td>
-                                    <td className="p-4 text-center">
-                                        <span className="bg-zinc-900 px-3 py-1 border border-zinc-800 text-zinc-500">{cat.count}</span>
-                                    </td>
-                                    <td className="p-4 text-right opacity-50 group-hover:opacity-100 transition-opacity">
-                                        <button className="material-symbols-outlined text-sm text-zinc-500 hover:text-red-500">delete_forever</button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
+                  <div className="border border-zinc-800 overflow-x-auto">
+                    <table className="w-full text-left font-mono text-[10px] md:text-sm whitespace-nowrap">
+                      <thead>
+                        <tr className="bg-zinc-900 border-b border-zinc-800">
+                          <th className="p-4 uppercase tracking-widest text-zinc-500">BEAT_TITLE</th>
+                          <th className="p-4 uppercase tracking-widest text-zinc-500">GENRE</th>
+                          <th className="p-4 uppercase tracking-widest text-zinc-500">BPM</th>
+                          <th className="p-4 uppercase tracking-widest text-zinc-500 text-right">OPERATIONS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {beats.map((beat) => (
+                          <tr key={beat.id} className="border-b border-zinc-900 hover:bg-zinc-900/30 transition-colors">
+                            <td className="p-4 font-bold">{beat.title}</td>
+                            <td className="p-4">
+                                <span className="bg-zinc-900 px-2 py-1 border border-zinc-800 text-[9px] uppercase">{beat.genre}</span>
+                            </td>
+                            <td className="p-4 text-[10px] font-bold">{beat.bpm}</td>
+                            <td className="p-4 text-right">
+                              <button onClick={() => handleDelete('beats', beat.id)} className="text-zinc-500 hover:text-red-500 transition-colors">
+                                  <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
                     </table>
+                  </div>
                 </div>
-            </div>
-          )}
+              )}
 
-          {activeTab === "inquiries" && (
-            <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-zinc-900">
-              <span className="material-symbols-outlined text-5xl text-zinc-800 mb-4">mail</span>
-              <p className="font-mono text-xs text-zinc-600 uppercase tracking-widest">No_Active_Transmission_Protocols</p>
-            </div>
-          )}
+              {activeTab === "projects" && (
+                <div className="space-y-8 animate-[fadeIn_0.5s_ease-out]">
+                   <div className="flex justify-between items-center">
+                    <h2 className="font-headline text-3xl font-black uppercase italic">PORTFOLIO_ARCHIVE</h2>
+                  </div>
+                  
+                  {/* Simple Add Project Form */}
+                  <div className="bg-zinc-900/50 border border-zinc-800 p-8">
+                     <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-6">ADD_NEW_PROJECT_FILE</p>
+                     <form onSubmit={async (e) => {
+                         e.preventDefault();
+                         const form = e.target as HTMLFormElement;
+                         const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
+                         const titleInput = form.querySelector('input[name="title"]') as HTMLInputElement;
+                         const categoryInput = form.querySelector('input[name="category"]') as HTMLInputElement;
+                         
+                         if (!fileInput.files?.[0]) return alert("Please select an image");
+                         
+                         setUploading(true);
+                         try {
+                            const imageUrl = await uploadFile(fileInput.files[0], 'projects');
+                            const { error } = await supabase.from('projects').insert([{
+                                title: titleInput.value,
+                                category: categoryInput.value,
+                                image_url: imageUrl,
+                                date: new Date().toISOString().split('T')[0]
+                            }]);
+                            if (error) throw error;
+                            form.reset();
+                            fetchData();
+                         } catch (err: any) {
+                             alert(`Upload failed: ${err.message}`);
+                         } finally {
+                             setUploading(false);
+                         }
+                     }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <input name="title" required placeholder="PROJECT_TITLE" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                        <input name="category" required placeholder="CATEGORY (MIXING/PROD)" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                        <div className="relative">
+                            <input type="file" required accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                            <div className="h-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-[10px] flex items-center gap-2 text-zinc-500">
+                                <UploadCloud size={14} />
+                                SELECT_COVER_ART
+                            </div>
+                        </div>
+                        <button disabled={uploading} className="bg-zinc-50 text-zinc-950 font-black uppercase text-xs tracking-widest hover:invert transition-all disabled:opacity-50">
+                            {uploading ? "UPLOADING..." : "INITIALIZE_PROJECT"}
+                        </button>
+                     </form>
+                  </div>
 
-          {activeTab === "settings" && (
-            <div className="max-w-xl space-y-8 animate-[fadeIn_0.5s_ease-out]">
-                <div className="flex flex-col gap-2">
-                    <label className="font-mono text-[10px] text-zinc-500 uppercase">STORE_NAME</label>
-                    <input type="text" defaultValue="LUXBEATZ_OFFICIAL" className="bg-zinc-900 border border-zinc-800 p-4 font-headline font-bold text-xl focus:border-zinc-50 outline-none transition-colors" />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {projects.map((project) => (
+                        <div key={project.id} className="bg-zinc-900 group relative">
+                            <img src={project.image_url} alt={project.title} className="w-full aspect-video object-cover grayscale opacity-50 group-hover:opacity-100 transition-all" />
+                            <div className="p-4 flex justify-between items-center">
+                                <div>
+                                    <h4 className="font-bold uppercase text-xs">{project.title}</h4>
+                                    <span className="text-[9px] text-zinc-500 uppercase">{project.category}</span>
+                                </div>
+                                <button onClick={() => handleDelete('projects', project.id)} className="text-zinc-600 hover:text-red-500 transition-colors">
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                    <label className="font-mono text-[10px] text-zinc-500 uppercase">MAINTENANCE_MODE</label>
-                    <div className="flex gap-4">
-                        <button className="flex-1 border-2 border-zinc-50 py-3 font-bold uppercase tracking-widest">OFF</button>
-                        <button className="flex-1 border border-zinc-800 py-3 font-bold text-zinc-600 uppercase tracking-widest">ON</button>
+              )}
+
+              {activeTab === "categories" && (
+                <div className="space-y-12 animate-[fadeIn_0.5s_ease-out]">
+                    <div className="flex justify-between items-center">
+                        <h2 className="font-headline text-3xl font-black uppercase italic">SIGNAL_CATEGORIES</h2>
+                    </div>
+
+                    <div className="bg-zinc-900/50 border border-zinc-800 p-8 max-w-2xl">
+                        <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-6 underline decoration-zinc-800 underline-offset-8">ADD_NEW_CATEGORY_PROTOCOL</p>
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <input 
+                                type="text" 
+                                value={newCategory}
+                                onChange={(e) => setNewCategory(e.target.value)}
+                                placeholder="CATEGORY_NAME (e.g. Jersey Club)" 
+                                className="flex-1 bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs focus:border-zinc-50 outline-none transition-colors" 
+                            />
+                            <button onClick={handleAddCategory} className="bg-zinc-50 text-zinc-950 px-8 py-4 font-headline font-black text-xs uppercase tracking-widest hover:invert transition-all">INITIALIZE_CATEGORY</button>
+                        </div>
+                    </div>
+
+                    <div className="border border-zinc-800 max-w-4xl">
+                        <table className="w-full text-left font-mono text-[10px] md:text-sm">
+                            <thead className="bg-zinc-900 border-b border-zinc-800 text-zinc-500">
+                                <tr>
+                                    <th className="p-4 uppercase tracking-tighter">CATEGORY_IDENTIFIER</th>
+                                    <th className="p-4 uppercase tracking-tighter text-right">MODIFICATION</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {categories.map((cat) => (
+                                    <tr key={cat.id} className="border-b border-zinc-900 group">
+                                        <td className="p-4 font-bold md:text-lg">{cat.name}</td>
+                                        <td className="p-4 text-right opacity-50 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => handleDelete('categories', cat.id)} className="text-zinc-500 hover:text-red-500 transition-colors">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <button className="w-full bg-primary text-on-primary py-4 font-headline font-black text-xl uppercase tracking-widest hover:invert transition-all">SAVE_RECONFIGURATION</button>
-            </div>
+              )}
+
+              {activeTab === "inquiries" && (
+                <div className="space-y-8 animate-[fadeIn_0.5s_ease-out]">
+                   <h2 className="font-headline text-3xl font-black uppercase italic">CLIENT_TRANSMISSIONS</h2>
+                   {inquiries.length > 0 ? (
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           {inquiries.map((iq) => (
+                               <div key={iq.id} className="bg-zinc-900 border border-zinc-800 p-6 flex flex-col gap-4">
+                                   <div className="flex justify-between items-start">
+                                       <div>
+                                           <h4 className="font-bold uppercase text-lg">{iq.client_name}</h4>
+                                           <p className="font-mono text-[10px] text-zinc-500">{iq.client_email}</p>
+                                       </div>
+                                       <span className="bg-primary/20 text-primary text-[9px] px-2 py-1 uppercase">{iq.status}</span>
+                                   </div>
+                                   <p className="text-xs text-zinc-300 italic leading-relaxed">"{iq.message}"</p>
+                                   <div className="pt-4 border-t border-zinc-800 flex justify-between items-center">
+                                       <span className="font-mono text-[10px] text-zinc-600">{new Date(iq.created_at).toLocaleDateString()}</span>
+                                       <button onClick={() => handleDelete('inquiries', iq.id)} className="text-zinc-600 hover:text-red-500 transition-colors">
+                                           <Trash2 size={14} />
+                                       </button>
+                                   </div>
+                               </div>
+                           ))}
+                       </div>
+                   ) : (
+                    <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-zinc-900">
+                        <Inbox size={48} className="text-zinc-800 mb-4" />
+                        <p className="font-mono text-xs text-zinc-600 uppercase tracking-widest">No_Active_Transmission_Protocols</p>
+                    </div>
+                   )}
+                </div>
+              )}
+            </>
           )}
         </section>
       </main>
