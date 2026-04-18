@@ -167,6 +167,7 @@ export default function AdminDashboard() {
         <div className="flex border-b border-zinc-800 mb-12 overflow-x-auto whitespace-nowrap scrollbar-hide">
           {[
               { id: "inventory", icon: Music, label: "INVENTORY" },
+              { id: "demo", icon: Activity, label: "DEMO_SIGNALS" },
               { id: "projects", icon: ImageIcon, label: "PROJECTS" },
               { id: "categories", icon: Grid, label: "CATEGORIES" },
               { id: "inquiries", icon: Inbox, label: "INQUIRIES" }
@@ -425,6 +426,54 @@ export default function AdminDashboard() {
                             </div>
                         </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "demo" && (
+                <div className="space-y-12 animate-[fadeIn_0.5s_ease-out]">
+                  <div className="flex justify-between items-center border-b border-zinc-900 pb-4">
+                    <div>
+                      <h2 className="font-headline text-3xl font-black uppercase italic">DEMO_SIGNALS</h2>
+                      <p className="font-mono text-[8px] text-zinc-500 uppercase tracking-widest mt-1">CURATED_MAIN_PAGE_SELECTION ({beats.filter(b => b.is_featured).length}/3)</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {beats.filter(b => b.is_featured).map((beat) => (
+                      <div key={beat.id} className="bg-zinc-900 border border-zinc-50 p-6 flex flex-col justify-between group">
+                         <div>
+                            <div className="flex justify-between items-start mb-4">
+                               <span className="bg-zinc-50 text-zinc-950 text-[8px] font-black px-2 py-1 uppercase tracking-widest">ACTIVE_DEMO</span>
+                               <span className="font-mono text-[10px] text-zinc-500 italic">{beat.genre}</span>
+                            </div>
+                            <h4 className="font-headline text-2xl font-black uppercase tracking-tight mb-2">{beat.title}</h4>
+                            <p className="font-mono text-[10px] text-zinc-600 uppercase">SIGNAL_STRENGTH: 100%</p>
+                         </div>
+                         <button 
+                            onClick={async () => {
+                                const { error } = await supabase.from('beats').update({ is_featured: false }).eq('id', beat.id);
+                                if (!error) fetchData();
+                            }}
+                            className="mt-8 border border-zinc-800 text-zinc-500 py-3 font-mono text-[10px] uppercase tracking-widest hover:border-red-500 hover:text-red-500 transition-all hover:bg-red-500/5"
+                         >
+                            REMOVE_FROM_HERO
+                         </button>
+                      </div>
+                    ))}
+                    {beats.filter(b => b.is_featured).length === 0 && (
+                        <div className="col-span-full py-20 bg-zinc-950 border border-zinc-900 border-dashed flex flex-col items-center justify-center text-zinc-800">
+                           <Activity size={32} className="mb-4 opacity-20" />
+                           <p className="font-mono text-[10px] uppercase tracking-widest">No_SIGNALS_PROMOTED_TO_DEMO</p>
+                        </div>
+                    )}
+                  </div>
+                  
+                  <div className="bg-zinc-900/30 border border-zinc-800 p-8">
+                     <h4 className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-4">PROTOCOL_INFO</h4>
+                     <p className="font-mono text-[10px] text-zinc-700 leading-relaxed uppercase">
+                        DEMO_SIGNALS ARE FEATURED DIRECTLY ON THE HOME PAGE HERO GALLERY. LACK OF ACTIVE DEMOS WILL RESULT IN DYNAMIC PLACEHOLDERS. CAP RECOMMENDED AT 3 SIGNALS FOR OPTIMAL LOAD SYNC.
+                     </p>
                   </div>
                 </div>
               )}
