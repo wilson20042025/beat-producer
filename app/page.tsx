@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import { Footer } from "@/components/Footer";
-import { ArrowRight, Play, Heart, ArrowUpRight } from "lucide-react";
+import { ArrowRight, Play, Pause, Heart, ArrowUpRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface Beat {
@@ -13,6 +13,8 @@ interface Beat {
   title: string;
   genre: string;
   bpm: number;
+  audio_url: string;
+  art_url?: string;
   duration?: string;
 }
 
@@ -20,6 +22,10 @@ export default function Home() {
   const [demos, setDemos] = useState<Beat[]>([]);
   const [featuredProjects, setFeaturedProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Audio State
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     async function initHome() {
@@ -109,8 +115,24 @@ export default function Home() {
                           {demo.title}
                         </h4>
                         <div className="mt-2 md:mt-4 flex items-center gap-2 md:gap-4">
-                           <button className="w-8 h-8 md:w-12 md:h-12 bg-zinc-50 text-zinc-950 rounded-full flex items-center justify-center hover:bg-primary hover:text-zinc-50 transition-colors">
-                              <Play className="w-4 h-4 md:w-6 md:h-6 fill-current" />
+                           <button 
+                                onClick={() => {
+                                    if (playingId === demo.id) {
+                                        audioRef.current?.pause();
+                                        setPlayingId(null);
+                                    } else {
+                                        if (audioRef.current) audioRef.current.pause();
+                                        audioRef.current = new Audio(demo.audio_url);
+                                        audioRef.current.play();
+                                        setPlayingId(demo.id);
+                                        audioRef.current.onended = () => setPlayingId(null);
+                                    }
+                                }}
+                                className={`w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all ${
+                                    playingId === demo.id ? "bg-primary text-zinc-50" : "bg-zinc-50 text-zinc-950 hover:bg-primary hover:text-zinc-50"
+                                }`}
+                            >
+                               {playingId === demo.id ? <Pause className="w-4 h-4 md:w-6 md:h-6" /> : <Play className="w-4 h-4 md:w-6 md:h-6 fill-current" />}
                            </button>
                            <div className="flex-1 h-[1px] md:h-[2px] bg-zinc-800 relative overflow-hidden hidden md:block">
                               <div className="absolute inset-x-0 inset-y-0 bg-primary/20 animate-pulse"></div>

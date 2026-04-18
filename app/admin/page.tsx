@@ -124,8 +124,7 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <Header />
-      <main className="min-h-screen pt-24 pb-32 px-4 md:px-12 lg:px-24 bg-zinc-950 text-zinc-50 font-['Space_Grotesk']">
+      <main className="min-h-screen pt-8 pb-32 px-4 md:px-12 lg:px-24 bg-zinc-950 text-zinc-50 font-['Space_Grotesk']">
         {/* Admin Header */}
         <header className="mb-12 border-b-4 border-zinc-50 pb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative">
           <div>
@@ -337,7 +336,12 @@ export default function AdminDashboard() {
                       <tbody>
                         {beats.map((beat) => (
                           <tr key={beat.id} className="border-b border-zinc-900 hover:bg-zinc-900/30 transition-colors">
-                            <td className="p-4 font-bold">{beat.title}</td>
+                            <td className="p-4 font-bold flex items-center gap-3">
+                                {beat.title}
+                                {beat.is_featured && (
+                                    <span className="bg-primary/20 text-primary text-[7px] font-black px-1.5 py-0.5 border border-primary/30 uppercase tracking-widest">DEMO</span>
+                                )}
+                            </td>
                             <td className="p-4">
                                 <span className="bg-zinc-900 px-2 py-1 border border-zinc-800 text-[9px] uppercase">{beat.genre}</span>
                             </td>

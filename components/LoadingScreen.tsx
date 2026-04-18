@@ -17,6 +17,9 @@ export function LoadingScreen() {
   const [isWhiteTransition, setIsWhiteTransition] = useState(false);
   const [isTypingFinished, setIsTypingFinished] = useState(false);
   
+  // Skip for admin workstation
+  const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  
   const fullText = '"Healing Your Pain Through Music"';
   const typewriterSpeed = 150; 
 
@@ -92,7 +95,7 @@ export function LoadingScreen() {
     }, 800);
   };
 
-  if (!mounted || !loading) return null;
+  if (!mounted || !loading || isAdminPath) return null;
 
   return (
     <>
