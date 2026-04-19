@@ -431,8 +431,7 @@ export default function AdminDashboard() {
                      <form onSubmit={async (e) => {
                           e.preventDefault();
                           const form = e.currentTarget;
-                          const titleInput = form.elements.namedItem('title') as HTMLInputElement;
-                          const categoryInput = form.elements.namedItem('category') as HTMLInputElement;
+                          const formData = new FormData(form);
                           const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
 
                           if (!fileInput.files?.[0]) return alert("COVER_ART_REQUIRED");
@@ -444,11 +443,11 @@ export default function AdminDashboard() {
                                  title: (formData.get('title') as string)?.toUpperCase(),
                                  category: (formData.get('category') as string)?.toUpperCase(),
                                  image_url: imageUrl,
-                                 date: `${form.querySelector<HTMLInputElement>('input[name="year"]')?.value || '2024'}-01-01`,
-                                 spotify_url: form.querySelector<HTMLInputElement>('input[name="spotify"]')?.value,
-                                 apple_music_url: form.querySelector<HTMLInputElement>('input[name="apple"]')?.value,
-                                 youtube_url: form.querySelector<HTMLInputElement>('input[name="youtube"]')?.value,
-                                 audiomack_url: form.querySelector<HTMLInputElement>('input[name="audiomack"]')?.value
+                                 date: `${formData.get('year') || '2024'}-01-01`,
+                                 spotify_url: formData.get('spotify') as string,
+                                 apple_music_url: formData.get('apple') as string,
+                                 youtube_url: formData.get('youtube') as string,
+                                 audiomack_url: formData.get('audiomack') as string
                              }]);
                              if (error) throw error;
                              form.reset();
