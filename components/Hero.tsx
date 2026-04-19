@@ -13,19 +13,6 @@ export function Hero({ title = "THE_\nBEAT_\nVAULT" }: { title?: string }) {
           </h2>
         </div>
 
-        <div className="w-full md:w-[40%] flex flex-col gap-6">
-          <p className="text-sm text-on-surface-variant max-w-full md:max-w-xs leading-relaxed border-l-2 border-primary pl-4">
-            PROFESSIONAL BEATS AND PRODUCTION SERVICES TAILORED FOR INDEPENDENT ARTISTS. 
-            SECURE YOUR SIGNATURE SOUND TODAY.
-          </p>
-          <div className="group flex items-center justify-between bg-primary text-on-primary p-4 md:p-6 cursor-pointer hover:bg-surface-container-highest hover:text-primary transition-colors duration-100">
-            <span className="font-headline font-bold uppercase tracking-widest text-sm md:text-base">
-              BROWSE_BEATS
-            </span>
-            <span className="material-symbols-outlined">arrow_forward</span>
-          </div>
-        </div>
-
       </div>
     </section>
   );

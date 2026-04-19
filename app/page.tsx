@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import { Footer } from "@/components/Footer";
-import { ArrowRight, Play, Pause, Heart, ArrowUpRight } from "lucide-react";
+import { ArrowRight, Play, Pause, Heart, ArrowUpRight, X, Calendar, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface Beat {
@@ -22,6 +22,7 @@ export default function Home() {
   const [demos, setDemos] = useState<Beat[]>([]);
   const [featuredProjects, setFeaturedProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
 
   // Audio State
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -72,12 +73,15 @@ export default function Home() {
               <p className="text-sm text-on-surface-variant max-w-full md:max-w-xs leading-relaxed border-l-2 border-primary pl-4">
                 High-quality instrumentals for your next hit. Industry standard sound design and professional licensing for independent artists.
               </p>
-              <div className="group flex items-center justify-between bg-primary text-on-primary p-4 md:p-6 cursor-pointer hover:bg-surface-container-highest hover:text-primary transition-colors duration-100">
+              <Link 
+                href="/catalog" 
+                className="group flex items-center justify-between bg-primary text-on-primary p-4 md:p-6 cursor-pointer hover:bg-surface-container-highest hover:text-primary transition-colors duration-100"
+              >
                 <span className="font-headline font-bold uppercase tracking-widest text-sm md:text-base">
                  Visit_LuxBeatz_Store
                 </span>
                 <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
-              </div>
+              </Link>
             </div>
           </div>
         </section>
@@ -167,7 +171,7 @@ export default function Home() {
               <h3 className="font-headline text-2xl md:text-5xl font-black uppercase tracking-tighter italic">TOP_PROJECTS</h3>
               <p className="font-mono text-[8px] md:text-[10px] text-zinc-500 uppercase tracking-[0.3em] mt-1">ARCHIVAL_SELECTION // HIT_RECORDS</p>
             </div>
-            <Link href="/projects" className="font-mono text-[10px] text-outline underline cursor-pointer uppercase">ENTER_GALLERY</Link>
+            <Link href="/projects" className="font-mono text-[10px] text-outline underline cursor-pointer uppercase">View_All</Link>
           </div>
 
           <div className="grid grid-cols-3 gap-2 md:gap-8">
@@ -176,7 +180,11 @@ export default function Home() {
                     <div key={i} className="aspect-square bg-zinc-900 animate-pulse border border-zinc-800"></div>
                 ))
             ) : featuredProjects.map((project) => (
-                <Link key={project.id} href="/projects" className="group flex flex-col gap-1 md:gap-4 relative">
+                <div 
+                    key={project.id} 
+                    onClick={() => setSelectedProject(project)}
+                    className="group flex flex-col gap-1 md:gap-4 relative cursor-pointer"
+                >
                     <div className="relative aspect-square bg-zinc-950 overflow-hidden border border-zinc-800 group-hover:border-primary transition-all duration-300">
                         <img 
                             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-700" 
@@ -192,7 +200,7 @@ export default function Home() {
                             </div>
                         </div>
                     </div>
-                </Link>
+                </div>
             ))}
           </div>
         </section>
@@ -281,6 +289,112 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      {/* --- Project Detail Overlay --- */}
+      {selectedProject && (
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-12 animate-[fadeIn_0.3s_ease-out]"
+            onClick={() => setSelectedProject(null)}
+          >
+            <div className="absolute inset-0 bg-zinc-950/95 backdrop-blur-xl"></div>
+            <div className="absolute inset-0 debug-grid opacity-[0.05]"></div>
+            
+            <div 
+                className="relative w-full max-w-6xl bg-zinc-900 border-2 border-zinc-800 shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col lg:flex-row h-full max-h-[90vh] md:max-h-[80vh]"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Exit Station */}
+                <button 
+                    onClick={() => setSelectedProject(null)}
+                    className="absolute top-4 right-4 z-20 w-12 h-12 bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-zinc-50 hover:border-zinc-50 transition-all active:scale-95 group"
+                >
+                    <X size={20} className="group-hover:rotate-90 transition-transform" />
+                </button>
+
+                {/* Left Side: Media Asset */}
+                <div className="w-full lg:w-[55%] relative h-64 lg:h-auto overflow-hidden bg-black flex items-center justify-center border-r border-zinc-800/50">
+                    <img 
+                        src={selectedProject.image_url} 
+                        className="absolute inset-0 w-full h-full object-cover opacity-60 grayscale-[0.5]" 
+                        alt={selectedProject.title} 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-zinc-900 via-transparent to-transparent hidden lg:block"></div>
+                </div>
+
+                {/* Right Side: Archive Content */}
+                <div className="flex-1 p-6 md:p-12 flex flex-col justify-center overflow-y-auto custom-scrollbar">
+                    <div className="space-y-12">
+                        <div>
+                            <div className="flex items-center gap-3 mb-4">
+                                <span className="bg-primary/20 text-primary text-[10px] font-black px-3 py-1 border border-primary/30 uppercase tracking-widest">{selectedProject.category}</span>
+                                <span className="font-mono text-[10px] text-zinc-600 uppercase flex items-center gap-2">
+                                    <Calendar size={12} />
+                                    SYNCED_{new Date(selectedProject.date).getFullYear()}
+                                </span>
+                            </div>
+                            <h2 className="font-headline text-5xl md:text-8xl font-black uppercase text-zinc-50 tracking-tighter leading-[0.85] italic mb-6">
+                                {selectedProject.title}
+                            </h2>
+                        </div>
+
+                        <div className="space-y-6">
+                            <h5 className="font-mono text-[10px] text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-2">STREAM_ON_SIGNALS</h5>
+                            <div className="grid grid-cols-1 gap-3">
+                                {selectedProject.spotify_url && (
+                                    <a 
+                                        href={selectedProject.spotify_url} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        className="bg-zinc-950 border border-zinc-800 p-4 hover:border-[#1DB954] hover:bg-[#1DB954]/5 transition-all flex items-center justify-between group"
+                                    >
+                                        <span className="font-mono text-xs uppercase tracking-widest group-hover:text-[#1DB954]">SPOTIFY_SIGNAL</span>
+                                        <ExternalLink size={14} className="text-zinc-700 group-hover:text-[#1DB954]" />
+                                    </a>
+                                )}
+                                {selectedProject.apple_music_url && (
+                                    <a 
+                                        href={selectedProject.apple_music_url} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        className="bg-zinc-950 border border-zinc-800 p-4 hover:border-[#FA2D3F] hover:bg-[#FA2D3F]/5 transition-all flex items-center justify-between group"
+                                    >
+                                        <span className="font-mono text-xs uppercase tracking-widest group-hover:text-[#FA2D3F]">APPLE_MUSIC_TRANS</span>
+                                        <ExternalLink size={14} className="text-zinc-700 group-hover:text-[#FA2D3F]" />
+                                    </a>
+                                )}
+                                {selectedProject.youtube_url && (
+                                    <a 
+                                        href={selectedProject.youtube_url} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        className="bg-zinc-950 border border-zinc-800 p-4 hover:border-[#FF0000] hover:bg-[#FF0000]/5 transition-all flex items-center justify-between group"
+                                    >
+                                        <span className="font-mono text-xs uppercase tracking-widest group-hover:text-[#FF0000]">YOUTUBE_VISUAL</span>
+                                        <ExternalLink size={14} className="text-zinc-700 group-hover:text-[#FF0000]" />
+                                    </a>
+                                )}
+                                {selectedProject.audiomack_url && (
+                                    <a 
+                                        href={selectedProject.audiomack_url} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        className="bg-zinc-950 border border-zinc-800 p-4 hover:border-[#FFA200] hover:bg-[#FFA200]/5 transition-all flex items-center justify-between group"
+                                    >
+                                        <span className="font-mono text-xs uppercase tracking-widest group-hover:text-[#FFA200]">AUDIOMACK_SIGNAL</span>
+                                        <ExternalLink size={14} className="text-zinc-700 group-hover:text-[#FFA200]" />
+                                    </a>
+                                )}
+                                {!selectedProject.spotify_url && !selectedProject.apple_music_url && !selectedProject.youtube_url && !selectedProject.audiomack_url && (
+                                    <p className="font-mono text-[10px] text-zinc-800 uppercase italic">ARCHIVAL_SIGNAL_ONLY // NO_PUBLIC_TRANSMISSION</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+      )}
+
       <BottomNav />
       <Footer />
     </>

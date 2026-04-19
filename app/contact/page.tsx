@@ -1,10 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 
 export default function ContactPage() {
+  const [selectedScope, setSelectedScope] = useState("Mixing_Mastering");
+
+  const scopes = [
+    "Custom_Production",
+    "Mixing_Mastering",
+    "Sound_Design",
+    "Licensing",
+    "Consultation",
+    "Other"
+  ];
+
   return (
     <>
       <Header />
@@ -45,12 +56,20 @@ export default function ContactPage() {
               <div className="group">
                 <label className="block font-headline text-xs font-bold tracking-[0.3em] text-outline mb-4 group-focus-within:text-zinc-50 transition-colors uppercase">03_PROJECT_SCOPE</label>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-0 border-2 border-zinc-50">
-                  <button className="border-2 border-zinc-50 p-3 font-headline text-xs font-bold hover:bg-zinc-50 hover:text-zinc-950 transition-colors uppercase" type="button">Custom_Production</button>
-                  <button className="border-2 border-zinc-50 p-3 font-headline text-xs font-bold bg-zinc-50 text-zinc-950 uppercase" type="button">Mixing_Mastering</button>
-                  <button className="border-2 border-zinc-50 p-3 font-headline text-xs font-bold hover:bg-zinc-50 hover:text-zinc-950 transition-colors uppercase" type="button">Sound_Design</button>
-                  <button className="border-2 border-zinc-50 p-3 font-headline text-xs font-bold hover:bg-zinc-50 hover:text-zinc-950 transition-colors uppercase" type="button">Licensing</button>
-                  <button className="border-2 border-zinc-50 p-3 font-headline text-xs font-bold hover:bg-zinc-50 hover:text-zinc-950 transition-colors uppercase" type="button">Consultation</button>
-                  <button className="border-2 border-zinc-50 p-3 font-headline text-xs font-bold hover:bg-zinc-50 hover:text-zinc-950 transition-colors uppercase" type="button">Other</button>
+                  {scopes.map((scope) => (
+                    <button 
+                      key={scope}
+                      onClick={() => setSelectedScope(scope)}
+                      className={`border-2 border-zinc-50 p-3 font-headline text-xs font-bold transition-colors uppercase ${
+                        selectedScope === scope 
+                        ? "bg-zinc-50 text-zinc-950" 
+                        : "hover:bg-zinc-50 hover:text-zinc-950"
+                      }`} 
+                      type="button"
+                    >
+                      {scope.replace('_', ' ')}
+                    </button>
+                  ))}
                 </div>
               </div>
               

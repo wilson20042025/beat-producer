@@ -17,7 +17,10 @@ import {
   Music,
   LogOut,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Edit2,
+  X,
+  Save
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -25,6 +28,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("inventory");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [editingProject, setEditingProject] = useState<any | null>(null);
+  const [editingBeat, setEditingBeat] = useState<any | null>(null);
   const [showBeatForm, setShowBeatForm] = useState(false);
   const [user, setUser] = useState<any>(null);
 
@@ -195,12 +200,12 @@ export default function AdminDashboard() {
           ) : (
             <>
               {activeTab === "inventory" && (
-                <div className="space-y-8 animate-[fadeIn_0.5s_ease-out]">
-                  <div className="flex justify-between items-center">
+               <div className="space-y-8 animate-[fadeIn_0.5s_ease-out]">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <h2 className="font-headline text-3xl font-black uppercase italic">BEAT_ARCHIVE</h2>
                     <button 
                         onClick={() => setShowBeatForm(!showBeatForm)}
-                        className={`px-8 py-3 font-headline font-black text-xs uppercase tracking-widest transition-all flex items-center gap-3 ${
+                        className={`w-full md:w-auto px-8 py-3 font-headline font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
                             showBeatForm ? "bg-zinc-800 text-zinc-500 hover:text-white" : "bg-zinc-50 text-zinc-950 hover:invert"
                         }`}
                     >
@@ -214,14 +219,21 @@ export default function AdminDashboard() {
                          <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-6 border-b border-zinc-800 pb-2">INITIALIZE_NEW_SIGNAL_ASSET</p>
                          <form onSubmit={async (e) => {
                              e.preventDefault();
-                             const form = e.target as HTMLFormElement;
-                             const audioFile = (form.querySelector('input[name="audio"]') as HTMLInputElement).files?.[0];
-                             const artFile = (form.querySelector('input[name="art"]') as HTMLInputElement).files?.[0];
-                             const title = (form.querySelector('input[name="title"]') as HTMLInputElement).value;
-                             const genre = (form.querySelector('input[name="genre"]') as HTMLInputElement).value;
-                             const bpm = (form.querySelector('input[name="bpm"]') as HTMLInputElement).value;
-                             const tags = (form.querySelector('input[name="tags"]') as HTMLInputElement).value;
-                             const isFeatured = (form.querySelector('input[name="is_featured"]') as HTMLInputElement).checked;
+                             const form = e.currentTarget;
+                             const formData = new FormData(form);
+                             
+                             const audioFile = (form.querySelector('input[name="audio"]') as HTMLInputElement)?.files?.[0];
+                             const artFile = (form.querySelector('input[name="art"]') as HTMLInputElement)?.files?.[0];
+                             const title = formData.get('title') as string;
+                             const genre = formData.get('genre') as string;
+                             const bpm = formData.get('bpm') as string;
+                             const tags = formData.get('tags') as string;
+                             const isFeatured = formData.get('is_featured') === 'on';
+                             
+                             // Pricing Nodes
+                             const priceBasic = formData.get('price_basic') as string;
+                             const pricePremium = formData.get('price_premium') as string;
+                             const priceExclusive = formData.get('price_exclusive') as string;
 
                              if (!audioFile) return alert("AUDIO_REQUIRED: No signal source identified.");
 
@@ -240,7 +252,10 @@ export default function AdminDashboard() {
                                     audio_url: audioUrl,
                                     art_url: artUrl,
                                     is_featured: isFeatured,
-                                    tags: tags.split(',').map(t => t.trim()).filter(t => t)
+                                    tags: tags.split(',').map(t => t.trim()).filter(t => t),
+                                    price_basic: parseFloat(priceBasic || '29.99'),
+                                    price_premium: parseFloat(pricePremium || '79.99'),
+                                    price_exclusive: parseFloat(priceExclusive || '499.00')
                                 }]);
 
                                 if (error) throw error;
@@ -280,6 +295,22 @@ export default function AdminDashboard() {
                                     <input type="checkbox" name="is_featured" className="w-4 h-4 bg-zinc-950 border-zinc-800 checked:bg-zinc-50" />
                                     <span className="font-mono text-[10px] text-zinc-500 uppercase group-hover:text-zinc-50 transition-colors">FEATURE_IN_MAIN_PORTFOLIO</span>
                                 </label>
+                            </div>
+
+                            {/* Pricing Parameters */}
+                            <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-zinc-900 pt-6">
+                                <div className="space-y-2">
+                                    <label className="font-mono text-[9px] text-zinc-500 uppercase">BASIC_PRICE_NODE (USD)</label>
+                                    <input name="price_basic" type="number" step="0.01" defaultValue="29.99" className="w-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="font-mono text-[9px] text-[#1DB954] uppercase">PREMIUM_PRICE_NODE (USD)</label>
+                                    <input name="price_premium" type="number" step="0.01" defaultValue="79.99" className="w-full bg-zinc-950 border border-[#1DB954]/50 p-4 font-mono text-xs uppercase focus:border-[#1DB954] outline-none" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="font-mono text-[9px] text-[#FFA200] uppercase">EXCLUSIVE_PRICE_NODE (USD)</label>
+                                    <input name="price_exclusive" type="number" step="0.01" defaultValue="499.00" className="w-full bg-zinc-950 border border-[#FFA200]/50 p-4 font-mono text-xs uppercase focus:border-[#FFA200] outline-none" />
+                                </div>
                             </div>
 
                             <div className="space-y-2">
@@ -325,93 +356,132 @@ export default function AdminDashboard() {
                       </div>
                   )}
 
-                  <div className="border border-zinc-800 overflow-x-auto">
-                    <table className="w-full text-left font-mono text-[10px] md:text-sm whitespace-nowrap">
-                      <thead>
-                        <tr className="bg-zinc-900 border-b border-zinc-800">
-                          <th className="p-4 uppercase tracking-widest text-zinc-500">BEAT_TITLE</th>
-                          <th className="p-4 uppercase tracking-widest text-zinc-500">GENRE</th>
-                          <th className="p-4 uppercase tracking-widest text-zinc-500 text-right">OPERATIONS</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {beats.map((beat) => (
-                          <tr key={beat.id} className="border-b border-zinc-900 hover:bg-zinc-900/30 transition-colors">
-                            <td className="p-4 font-bold flex items-center gap-3">
-                                {beat.title}
-                                {beat.is_featured && (
-                                    <span className="bg-primary/20 text-primary text-[7px] font-black px-1.5 py-0.5 border border-primary/30 uppercase tracking-widest">DEMO</span>
-                                )}
-                            </td>
-                            <td className="p-4">
-                                <span className="bg-zinc-900 px-2 py-1 border border-zinc-800 text-[9px] uppercase">{beat.genre}</span>
-                            </td>
-                            <td className="p-4 text-right">
-                              <button onClick={() => handleDelete('beats', beat.id)} className="text-zinc-500 hover:text-red-500 transition-colors">
-                                  <Trash2 size={16} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <div className="bg-zinc-950 border border-zinc-900 overflow-x-auto">
+                        <table className="w-full text-left font-mono text-[10px] hidden md:table">
+                            <thead className="bg-zinc-900 text-zinc-500 uppercase tracking-widest">
+                                <tr>
+                                    <th className="p-6 font-black">IDENTIFIER</th>
+                                    <th className="p-6 font-black">GENRE</th>
+                                    <th className="p-6 font-black">BPM</th>
+                                    <th className="p-6 font-black">STATUS</th>
+                                    <th className="p-6 font-black text-right">ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-900">
+                                {beats.map((beat) => (
+                                    <tr key={beat.id} className="hover:bg-zinc-900/50 transition-colors group">
+                                        <td className="p-6 font-bold text-zinc-100 uppercase tracking-tighter truncate max-w-[200px]">{beat.title}</td>
+                                        <td className="p-6 text-zinc-400">{beat.genre}</td>
+                                        <td className="p-6 text-zinc-600">{beat.bpm}</td>
+                                        <td className="p-6">
+                                            {beat.is_featured ? 
+                                                <span className="text-emerald-500 bg-emerald-500/10 px-2 py-0.5 border border-emerald-500/20">DEMO</span> : 
+                                                <span className="text-zinc-700">INVENTORY</span>
+                                            }
+                                        </td>
+                                        <td className="p-6 text-right">
+                                            <div className="flex items-center justify-end gap-3">
+                                                <button onClick={() => setEditingBeat(beat)} className="text-zinc-600 hover:text-zinc-50 transition-colors">
+                                                    <Edit2 size={14} />
+                                                </button>
+                                                <button onClick={() => handleDelete('beats', beat.id)} className="text-zinc-600 hover:text-red-500 transition-colors">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        {/* Mobile Beat Card List */}
+                        <div className="md:hidden divide-y divide-zinc-900">
+                            {beats.map((beat) => (
+                                <div key={beat.id} className="p-6 space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <h4 className="font-bold uppercase text-xs tracking-tighter text-zinc-50">{beat.title}</h4>
+                                        <div className="flex items-center gap-4">
+                                            <button onClick={() => setEditingBeat(beat)} className="text-zinc-600">
+                                                <Edit2 size={14} />
+                                            </button>
+                                            <button onClick={() => handleDelete('beats', beat.id)} className="text-zinc-600">
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[8px] text-zinc-500 uppercase font-mono">
+                                        <span>{beat.genre} // {beat.bpm} BPM</span>
+                                        {beat.is_featured && <span className="text-emerald-500">DEMO</span>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                   </div>
                 </div>
               )}
 
               {activeTab === "projects" && (
                 <div className="space-y-8 animate-[fadeIn_0.5s_ease-out]">
-                   <div className="flex justify-between items-center">
-                    <h2 className="font-headline text-3xl font-black uppercase italic">PORTFOLIO_ARCHIVE</h2>
-                  </div>
-                  
-                  {/* Add Project Form */}
-                  <div className="bg-zinc-900/50 border border-zinc-800 p-8">
-                     <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-6">ADD_NEW_PROJECT_FILE</p>
-                     <form onSubmit={async (e) => {
-                         e.preventDefault();
-                         const form = e.target as HTMLFormElement;
-                         const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
-                         const titleInput = form.querySelector('input[name="title"]') as HTMLInputElement;
-                         const categoryInput = form.querySelector('input[name="category"]') as HTMLInputElement;
-                         
-                         if (!fileInput.files?.[0]) return alert("IMAGE_REQUIRED: Select a visual asset.");
-                         
-                         setUploading(true);
-                         try {
-                            const imageUrl = await uploadFile(fileInput.files[0], 'projects');
-                            const { error } = await supabase.from('projects').insert([{
-                                title: titleInput.value.toUpperCase(),
-                                category: categoryInput.value.toUpperCase(),
-                                image_url: imageUrl,
-                                date: `${form.querySelector<HTMLInputElement>('input[name="year"]')?.value || '2024'}-01-01`
-                            }]);
-                            if (error) throw error;
-                            form.reset();
-                            fetchData();
-                         } catch (err: any) {
-                             alert(`PROTOCOL_FAILURE: ${err.message}`);
-                         } finally {
-                             setUploading(false);
-                         }
-                     }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <input name="title" required placeholder="PROJECT_TITLE" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
-                        <input name="category" required placeholder="GENRE/ROLE (e.g. PROD)" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
-                        <input name="year" required type="number" defaultValue={new Date().getFullYear()} className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
-                        <div className="relative">
-                            <input type="file" required accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                            <div className="h-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-[10px] flex items-center gap-2 text-zinc-500">
-                                <UploadCloud size={14} />
-                                SELECT_COVER_ART
-                            </div>
-                        </div>
-                        <button disabled={uploading} className="bg-zinc-50 text-zinc-950 font-black uppercase text-xs tracking-widest hover:invert transition-all disabled:opacity-50">
-                            {uploading ? "WAIT..." : "INITIALIZE"}
-                        </button>
-                     </form>
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                    <h2 className="font-headline text-3xl font-black uppercase italic">PROJECT_GALLERY</h2>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  <div className="bg-zinc-900/50 border border-zinc-800 p-4 md:p-8 mb-12">
+                     <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest mb-6 border-b border-zinc-800 pb-2">INITIALIZE_ARCHIVE_ENTRY</p>
+                     <form onSubmit={async (e) => {
+                          e.preventDefault();
+                          const form = e.currentTarget;
+                          const titleInput = form.elements.namedItem('title') as HTMLInputElement;
+                          const categoryInput = form.elements.namedItem('category') as HTMLInputElement;
+                          const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
+
+                          if (!fileInput.files?.[0]) return alert("COVER_ART_REQUIRED");
+
+                          setUploading(true);
+                          try {
+                             const imageUrl = await uploadFile(fileInput.files[0], 'projects');
+                             const { error } = await supabase.from('projects').insert([{
+                                 title: (formData.get('title') as string)?.toUpperCase(),
+                                 category: (formData.get('category') as string)?.toUpperCase(),
+                                 image_url: imageUrl,
+                                 date: `${form.querySelector<HTMLInputElement>('input[name="year"]')?.value || '2024'}-01-01`,
+                                 spotify_url: form.querySelector<HTMLInputElement>('input[name="spotify"]')?.value,
+                                 apple_music_url: form.querySelector<HTMLInputElement>('input[name="apple"]')?.value,
+                                 youtube_url: form.querySelector<HTMLInputElement>('input[name="youtube"]')?.value,
+                                 audiomack_url: form.querySelector<HTMLInputElement>('input[name="audiomack"]')?.value
+                             }]);
+                             if (error) throw error;
+                             form.reset();
+                             fetchData();
+                          } catch (err: any) {
+                              alert(`PROTOCOL_FAILURE: ${err.message}`);
+                          } finally {
+                              setUploading(false);
+                          }
+                      }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                         <input name="title" required placeholder="PROJECT_TITLE" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none w-full" />
+                         <input name="category" required placeholder="GENRE/ROLE (e.g. PROD)" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none w-full" />
+                         <input name="year" required type="number" defaultValue={new Date().getFullYear()} className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-xs uppercase focus:border-zinc-50 outline-none w-full" />
+                         <div className="relative">
+                             <input type="file" required accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                             <div className="h-full bg-zinc-950 border border-zinc-800 p-4 font-mono text-[10px] flex items-center gap-2 text-zinc-600">
+                                 <UploadCloud size={14} />
+                                 SELECT_COVER_ART
+                             </div>
+                         </div>
+                         <div className="md:col-span-2 lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t border-zinc-900 pt-4 mt-2">
+                             <input name="spotify" placeholder="SPOTIFY_URL" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-[10px] uppercase focus:border-[#1DB954] outline-none transition-colors" />
+                             <input name="apple" placeholder="APPLE_MUSIC_URL" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-[10px] uppercase focus:border-[#FA2D3F] outline-none transition-colors" />
+                             <input name="youtube" placeholder="YOUTUBE_URL" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-[10px] uppercase focus:border-[#FF0000] outline-none transition-colors" />
+                             <input name="audiomack" placeholder="AUDIOMACK_URL" className="bg-zinc-950 border border-zinc-800 p-4 font-mono text-[10px] uppercase focus:border-[#FFA200] outline-none transition-colors" />
+                         </div>
+                         <button disabled={uploading} className="bg-zinc-50 text-zinc-950 font-black uppercase text-xs tracking-widest hover:invert transition-all disabled:opacity-50 col-span-full py-4 px-8">
+                             {uploading ? "WAIT..." : "INITIALIZE_PROJECT_SIGNAL"}
+                         </button>
+                      </form>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                     {projects.map((project) => (
                         <div key={project.id} className="bg-zinc-900 group relative border border-zinc-800 overflow-hidden">
                             <img src={project.image_url} alt={project.title} className="w-full aspect-video object-cover grayscale opacity-50 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
@@ -420,9 +490,14 @@ export default function AdminDashboard() {
                                     <h4 className="font-bold uppercase text-[10px] truncate">{project.title}</h4>
                                     <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">{project.category}</span>
                                 </div>
-                                <button onClick={() => handleDelete('projects', project.id)} className="text-zinc-600 hover:text-red-500 transition-colors shrink-0">
-                                    <Trash2 size={14} />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => setEditingProject(project)} className="text-zinc-600 hover:text-zinc-50 transition-colors">
+                                        <Edit2 size={14} />
+                                    </button>
+                                    <button onClick={() => handleDelete('projects', project.id)} className="text-zinc-600 hover:text-red-500 transition-colors shrink-0">
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -498,7 +573,7 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
-                    <div className="border border-zinc-800 max-w-4xl">
+                    <div className="border border-zinc-800 max-w-4xl overflow-x-auto">
                         <table className="w-full text-left font-mono text-[10px] md:text-sm">
                             <thead className="bg-zinc-900 border-b border-zinc-800 text-zinc-500">
                                 <tr>
@@ -558,8 +633,130 @@ export default function AdminDashboard() {
             </>
           )}
         </section>
+      {/* --- Edit Project Modal --- */}
+      {editingProject && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4">
+              <div className="absolute inset-0 bg-zinc-950/95 backdrop-blur-xl" onClick={() => setEditingProject(null)}></div>
+              <div className="relative w-full h-full md:h-auto max-w-2xl bg-zinc-900 border-x md:border-2 border-zinc-800 shadow-2xl p-6 md:p-8 animate-[fadeIn_0.3s_ease-out] overflow-y-auto">
+                  <header className="flex justify-between items-center mb-6 md:mb-8 border-b border-zinc-800 pb-4 sticky top-0 bg-zinc-900 z-10">
+                      <h2 className="font-headline text-xl md:text-2xl font-black uppercase italic">RECALIBRATE_SIGNAL</h2>
+                      <button onClick={() => setEditingProject(null)} className="text-zinc-500 hover:text-zinc-50 transition-colors">
+                          <X size={20} />
+                      </button>
+                  </header>
+
+                  <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget;
+                      const { error } = await supabase.from('projects').update({
+                          title: (form.elements.namedItem('title') as HTMLInputElement).value.toUpperCase(),
+                          category: (form.elements.namedItem('category') as HTMLInputElement).value.toUpperCase(),
+                          date: `${(form.elements.namedItem('year') as HTMLInputElement).value}-01-01`,
+                          spotify_url: (form.elements.namedItem('spotify') as HTMLInputElement).value,
+                          apple_music_url: (form.elements.namedItem('apple') as HTMLInputElement).value,
+                          youtube_url: (form.elements.namedItem('youtube') as HTMLInputElement).value,
+                          audiomack_url: (form.elements.namedItem('audiomack') as HTMLInputElement).value,
+                      }).eq('id', editingProject.id);
+
+                      if (error) {
+                          alert(`MODIFICATION_FAILURE: ${error.message}`);
+                      } else {
+                          setEditingProject(null);
+                          fetchData();
+                      }
+                  }} className="space-y-6 pb-20 md:pb-0">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                          <div className="space-y-1">
+                              <label className="font-mono text-[8px] text-zinc-600 uppercase">TITLE</label>
+                              <input name="title" defaultValue={editingProject.title} required className="w-full bg-zinc-950 border border-zinc-800 p-3 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                          </div>
+                          <div className="space-y-1">
+                              <label className="font-mono text-[8px] text-zinc-600 uppercase">CATEGORY</label>
+                              <input name="category" defaultValue={editingProject.category} required className="w-full bg-zinc-950 border border-zinc-800 p-3 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                          </div>
+                          <div className="space-y-1">
+                              <label className="font-mono text-[8px] text-zinc-600 uppercase">YEAR</label>
+                              <input name="year" type="number" defaultValue={new Date(editingProject.date).getFullYear()} required className="w-full bg-zinc-950 border border-zinc-800 p-3 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                          </div>
+                      </div>
+
+                      <div className="space-y-4 pt-4 border-t border-zinc-800">
+                          <label className="font-mono text-[8px] text-zinc-600 uppercase tracking-widest">STREAMING_ENDPOINTS</label>
+                          <div className="space-y-2">
+                             <input name="spotify" placeholder="SPOTIFY_URL" defaultValue={editingProject.spotify_url} className="w-full bg-zinc-950 border border-zinc-800 p-3 font-mono text-[10px] uppercase focus:border-[#1DB954] outline-none" />
+                             <input name="apple" placeholder="APPLE_MUSIC_URL" defaultValue={editingProject.apple_music_url} className="w-full bg-zinc-950 border border-zinc-800 p-3 font-mono text-[10px] uppercase focus:border-[#FA2D3F] outline-none" />
+                             <input name="youtube" placeholder="YOUTUBE_URL" defaultValue={editingProject.youtube_url} className="w-full bg-zinc-950 border border-zinc-800 p-3 font-mono text-[10px] uppercase focus:border-[#FF0000] outline-none" />
+                             <input name="audiomack" placeholder="AUDIOMACK_URL" defaultValue={editingProject.audiomack_url} className="w-full bg-zinc-950 border border-zinc-800 p-3 font-mono text-[10px] uppercase focus:border-[#FFA200] outline-none" />
+                          </div>
+                      </div>
+
+                      <button type="submit" className="w-full bg-zinc-50 text-zinc-950 py-4 md:py-4 font-headline font-black uppercase text-xs tracking-widest hover:invert transition-all flex items-center justify-center gap-3">
+                          <Save size={16} />
+                          COMMIT_MODIFICATIONS
+                      </button>
+                  </form>
+              </div>
+          </div>
+      )}
       </main>
       <BottomNav />
+      {/* --- Edit Beat Modal --- */}
+      {editingBeat && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4">
+              <div className="absolute inset-0 bg-zinc-950/95 backdrop-blur-xl" onClick={() => setEditingBeat(null)}></div>
+              <div className="relative w-full h-full md:h-auto max-w-2xl bg-zinc-900 border-x md:border-2 border-zinc-800 shadow-2xl p-6 md:p-8 animate-[fadeIn_0.3s_ease-out] overflow-y-auto">
+                  <header className="flex justify-between items-center mb-6 md:mb-8 border-b border-zinc-800 pb-4 sticky top-0 bg-zinc-900 z-10">
+                      <h2 className="font-headline text-xl md:text-2xl font-black uppercase italic">RECALIBRATE_BEAT_ASSET</h2>
+                      <button onClick={() => setEditingBeat(null)} className="text-zinc-500 hover:text-zinc-50 transition-colors">
+                          <X size={20} />
+                      </button>
+                  </header>
+
+                  <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget;
+                      const { error } = await supabase.from('beats').update({
+                          title: (form.elements.namedItem('title') as HTMLInputElement).value.toUpperCase(),
+                          price_basic: parseFloat((form.elements.namedItem('price_basic') as HTMLInputElement).value || '29.99'),
+                          price_premium: parseFloat((form.elements.namedItem('price_premium') as HTMLInputElement).value || '79.99'),
+                          price_exclusive: parseFloat((form.elements.namedItem('price_exclusive') as HTMLInputElement).value || '499.00'),
+                      }).eq('id', editingBeat.id);
+
+                      if (error) {
+                          alert(`MODIFICATION_FAILURE: ${error.message}`);
+                      } else {
+                          setEditingBeat(null);
+                          fetchData();
+                      }
+                  }} className="space-y-6 pb-20 md:pb-0">
+                      <div className="space-y-1">
+                          <label className="font-mono text-[8px] text-zinc-600 uppercase">SIGNAL_IDENTIFIER (TITLE)</label>
+                          <input name="title" defaultValue={editingBeat.title} required className="w-full bg-zinc-950 border border-zinc-800 p-3 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-zinc-800">
+                          <div className="space-y-1">
+                              <label className="font-mono text-[8px] text-zinc-600 uppercase">BASIC_PRICE</label>
+                              <input name="price_basic" type="number" step="0.01" defaultValue={editingBeat.price_basic || 29.99} className="w-full bg-zinc-950 border border-zinc-800 p-3 font-mono text-xs uppercase focus:border-zinc-50 outline-none" />
+                          </div>
+                          <div className="space-y-1">
+                              <label className="font-mono text-[8px] text-[#1DB954] uppercase">PREMIUM_PRICE</label>
+                              <input name="price_premium" type="number" step="0.01" defaultValue={editingBeat.price_premium || 79.99} className="w-full bg-zinc-950 border border-[#1DB954]/50 p-3 font-mono text-xs uppercase focus:border-[#1DB954] outline-none" />
+                          </div>
+                          <div className="space-y-1">
+                              <label className="font-mono text-[8px] text-[#FFA200] uppercase">EXCLUSIVE_PRICE</label>
+                              <input name="price_exclusive" type="number" step="0.01" defaultValue={editingBeat.price_exclusive || 499.00} className="w-full bg-zinc-950 border border-[#FFA200]/50 p-3 font-mono text-xs uppercase focus:border-[#FFA200] outline-none" />
+                          </div>
+                      </div>
+
+                      <button type="submit" className="w-full bg-zinc-50 text-zinc-950 py-4 md:py-4 font-headline font-black uppercase text-xs tracking-widest hover:invert transition-all flex items-center justify-center gap-3">
+                          <Save size={16} />
+                          COMMIT_MODIFICATIONS
+                      </button>
+                  </form>
+              </div>
+          </div>
+      )}
     </>
   );
 }

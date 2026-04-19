@@ -33,6 +33,10 @@ CREATE TABLE projects (
     category TEXT, -- Mixing, Mastering, Production
     date DATE,
     tags TEXT[] DEFAULT '{}',
+    spotify_url TEXT,
+    apple_music_url TEXT,
+    youtube_url TEXT,
+    audiomack_url TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
